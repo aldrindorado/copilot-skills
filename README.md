@@ -1,2 +1,53 @@
-# copilot-skills
+# Shared Copilot Skills
+
+This private repository is the team's source of truth for reusable GitHub
+Copilot skills. Each published skill is installed into a team member's local
+Copilot skills directory, where the desktop app can discover it.
+
+## Team setup
+
+1. Ask a repository administrator to invite you as a collaborator.
+2. Clone this repository to any local directory:
+
+   ```powershell
+   git clone https://github.com/aldrindorado/copilot-skills.git "$HOME\source\copilot-skills"
+   ```
+
+3. Install its skills into the local Copilot directory:
+
+   ```powershell
+   Set-Location "$HOME\source\copilot-skills"
+   .\scripts\Install-CopilotSkills.ps1
+   ```
+
+4. Restart GitHub Copilot Desktop if the new skills do not appear immediately.
+
+The installer refuses to overwrite an existing non-repository skill. To update
+skills previously installed by this repository, pull the latest changes and
+run:
+
+```powershell
+git pull
+.\scripts\Install-CopilotSkills.ps1 -Force
+```
+
+## Adding a skill
+
+1. Copy `templates\skill-template` to `skills\<skill-name>`.
+2. Update `SKILL.md` with the skill name, description, and instructions.
+3. Put scripts or other local dependencies inside the same skill directory.
+4. Do not add credentials, tokens, customer data, or environment-specific
+   secrets.
+5. Test the skill locally, then open a pull request for review.
+
+The installer publishes only immediate child directories of `skills` that
+contain a `SKILL.md` file.
+
+## Repository layout
+
+```text
+skills/                  Published skills
+templates/skill-template/ Starting point for new skills
+scripts/                 Team installation tooling
+```
 Shared GitHub Copilot skills for the team
