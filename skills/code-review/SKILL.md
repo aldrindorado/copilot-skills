@@ -17,6 +17,18 @@ For every reported finding, include an implementation-ready **Suggested change**
 
 Present findings as a numbered list with a spelled-out severity label, matching this format: `1. Critical — concise finding title`. Use only `Critical`, `High`, `Medium`, or `Low`; do not use priority shorthand such as `P0` or `P1`. Put the explanation beneath the finding title, followed by the suggested change preview and any essential remediation guidance.
 
+## Clean-Diff Design Heuristic Pass
+
+Run the normal review process first. Only when it produces no actionable findings or inline comments, read the sibling `FOWLER-SMELLS.md` resource and review the changed code against its checklist.
+
+This fallback is a developer-focus aid, not a defect detector:
+
+- Treat every match as an optional, judgement-based observation, not a violation or a severity-rated finding.
+- Report only heuristics clearly supported by the changed code and likely to make the small clean change simpler or more cohesive. Do not invent concerns to populate the section.
+- Keep the output under `## Optional Design Heuristics`, with no more than three observations. For each, name the heuristic, cite the relevant changed line, explain the concrete design trade-off, and suggest a focused refactoring direction.
+- Use inline review comments only when the optional observation is specific enough to identify an exact changed line. Label it `Optional design heuristic` so it cannot be mistaken for a required change.
+- If no meaningful heuristic applies, report that the diff has no actionable findings and no optional design heuristics.
+
 ## Verified Safe Exceptions - Do Not Flag
 
 **`<%= %>` for trusted numeric IDs only**  
