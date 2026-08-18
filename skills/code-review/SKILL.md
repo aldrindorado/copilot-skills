@@ -7,6 +7,12 @@ description: Review workspace or pull-request changes for high-confidence securi
 
 ## Review Output
 
+### Inline Finding Location
+
+For a GitHub pull-request review, post each actionable finding as an **inline review comment** anchored to the exact added or modified line that requires the change. Use the pull-request review-comment tool rather than only describing the finding in a summary. Select the line that introduces the defect; do not anchor the comment to a nearby method declaration, unrelated context, or a whole-file summary. If the defect spans multiple changed lines, use an inline range when supported; otherwise anchor to the most directly responsible changed line.
+
+If a finding concerns unchanged code that is affected by the pull request, anchor it to the closest changed line that caused the regression and clearly identify the affected unchanged code in the comment. Do not report a standalone finding when it cannot be meaningfully tied to the pull-request diff.
+
 For every reported finding, include an implementation-ready **Suggested change** preview in a fenced code block. Keep the preview narrowly scoped to the finding, show enough surrounding context to identify the edit, and use `-`/`+` lines when a replacement is clearer. Do not include a preview when no finding is reported.
 
 Present findings as a numbered list with a spelled-out severity label, matching this format: `1. Critical — concise finding title`. Use only `Critical`, `High`, `Medium`, or `Low`; do not use priority shorthand such as `P0` or `P1`. Put the explanation beneath the finding title, followed by the suggested change preview and any essential remediation guidance.
