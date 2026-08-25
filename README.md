@@ -51,23 +51,4 @@ git pull
 .\scripts\Install-CopilotSkills.ps1 -Force
 ```
 
-## Adding a skill
-
-1. Copy `templates\skill-template` to `skills\<skill-name>`.
-2. Update `SKILL.md` with the skill name, description, and instructions.
-3. Put scripts or other local dependencies inside the same skill directory.
-4. Do not add credentials, tokens, customer data, or environment-specific
-   secrets.
-5. Test the skill locally, then open a pull request for review.
-
-The installer publishes only immediate child directories of `skills` that
-contain a `SKILL.md` file.
-
-## Repository layout
-
-```text
-skills/                  Published skills
-templates/skill-template/ Starting point for new skills
-scripts/                 Team installation tooling
-```
 Shared GitHub Copilot skills for the team
