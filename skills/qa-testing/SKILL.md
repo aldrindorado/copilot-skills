@@ -29,11 +29,18 @@ testing, staging verification, and automated QA.
   Do not block resources for visual, performance, or asset-verification tests.
 - Disable CSS animations and transitions immediately after navigation unless the
   scenario verifies motion or timing behavior.
+- Use explicit UI or network state conditions instead of arbitrary delays, and
+  do not retry after a timed-out condition.
 - Inspect only the target form or container with
   `playwright-browser_evaluate` or a targeted
-  `playwright-browser_snapshot`; never capture the full-page DOM by default.
-- Interact using `playwright-browser_click`,
-  `playwright-browser_type`, or `playwright-browser_fill_form`.
+  `playwright-browser_snapshot`; never capture the full-page DOM or scan all
+  elements by default.
+- Prefer `playwright-browser_fill_form` for ordinary field entry. Use
+  `playwright-browser_type` only when the scenario needs keyboard events, such
+  as per-character autocomplete behavior.
+- When analytics or `dataLayer` events can precede navigation, attach the event
+  listener before the triggering action and capture the result in the same
+  script to avoid losing it as the page unloads.
 - Use `playwright-browser_run_code_unsafe` for multi-step browser flows or
   structured `dataLayer` capture, especially when batching avoids tool
   round-trips.
@@ -89,9 +96,9 @@ When Chrome DevTools is used:
 ## Staging assets
 
 For browser-served static assets deployed to staging, verify the public staging
-URL with cache bypass and compare the response hash to the approved deployment
-asset when the deployment workflow supports it. Do not treat an upload alone
-as browser verification.
+URL with cache bypass, such as a timestamp query parameter, and compare the
+response hash to the approved deployment asset when the deployment workflow
+supports it. Do not treat an upload alone as browser verification.
 
 ## QA reporting
 
