@@ -1,11 +1,11 @@
 ---
-name: qa-testing
-description: Consolidated Ezytire testing, browser QA, staging verification, form-submission, and test-validation guidance. Invoke for any request involving testing, QA, validation, browser checks, staging verification, form testing, performance analysis, or Lighthouse.
+name: dev-testing
+description: Consolidated Ezytire developer testing, browser validation, staging verification, form-submission, and test-validation guidance. Invoke for requests involving development testing, validation, browser checks, staging verification, form testing, performance analysis, or Lighthouse.
 ---
 
-Use this skill whenever the user asks to test, validate, verify, QA, inspect
-browser behavior, test a form, confirm staging behavior, perform performance
-analysis, or run Lighthouse.
+Use this skill whenever the user asks to test, validate, verify, inspect browser
+behavior, test a form, confirm staging behavior, perform performance analysis,
+or run Lighthouse during development.
 
 ## Validation practices
 
@@ -17,13 +17,13 @@ analysis, or run Lighthouse.
   must remain compatible with legacy SQL Server.
 - Report only validation that was actually performed and its concrete outcome.
 
-## Browser testing and staging QA
+## Browser testing and staging validation
 
 Use Playwright (`playwright-browser_*`) by default for all browser-based
 testing, staging verification, and automated QA.
 
 - Navigate directly to the target URL instead of using global navigation flows.
-- For functional or form QA, use `playwright-browser_run_code_unsafe` to batch
+- For functional or form validation, use `playwright-browser_run_code_unsafe` to batch
   route setup, navigation, interactions, and waits into one script. Block image,
   font, media, and analytics requests where they are not part of the scenario.
   Do not block resources for visual, performance, or asset-verification tests.
@@ -100,7 +100,7 @@ URL with cache bypass, such as a timestamp query parameter, and compare the
 response hash to the approved deployment asset when the deployment workflow
 supports it. Do not treat an upload alone as browser verification.
 
-## QA reporting
+## Validation reporting
 
 Report browser test outcomes as a compact status block:
 
