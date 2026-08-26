@@ -1,6 +1,6 @@
 # Shared Copilot Skills
 
-This private repository is the team's source of truth for reusable GitHub
+This public repository is the team's source of truth for shareable GitHub
 Copilot skills. Each published skill is installed into a team member's local
 Copilot skills directory, where the desktop app can discover it.
 
