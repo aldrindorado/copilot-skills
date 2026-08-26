@@ -131,18 +131,30 @@ Use Playwright (`playwright-browser_*`) for all browser-based validation:
 - Disable CSS animations and transitions immediately after navigation unless the
   scenario verifies motion or timing behavior.
 - Inspect only the target element or container with
-  `playwright-browser_evaluate` or a targeted snapshot; avoid capturing the
-  full-page DOM by default.
+  `playwright-browser_evaluate` or a targeted snapshot; do not capture the
+  full-page DOM or scan all elements by default.
 - For multi-step journeys, batch route setup, navigation, interactions, and
   waits with `playwright-browser_run_code_unsafe`.
-- Use `playwright-browser_wait_for` with explicit conditions instead of fixed
-  arbitrary delays where possible.
-- Inspect console output only at `warning` or `error` level unless broader
-  evidence is needed.
+- For functional or form validation, block image, font, media, and analytics
+  requests only when they are not part of the scenario. Do not block resources
+  for visual or static-asset validation.
+- Use `playwright-browser_wait_for` with explicit UI or network conditions
+  instead of arbitrary delays, and do not retry after a timed-out condition.
+- Prefer `playwright-browser_fill_form` for ordinary field entry. Use
+  `playwright-browser_type` only when the scenario needs keyboard events, such
+  as per-character autocomplete behavior.
+- When validating analytics or `dataLayer` behavior that can precede navigation,
+  attach the event listener before the triggering action and capture the result
+  in the same script to avoid losing it as the page unloads. Record event
+  counts, relevant field presence, and a representative payload as evidence.
+- Inspect console output only at `warning` or `error` level. Inspect network
+  activity only for `4xx` or `5xx` failures, and omit request or response
+  payloads unless diagnosing an error.
 - Do not take screenshots unless verifying an explicit layout requirement or
   documenting a visual failure.
 - If a validation involves checking a freshly deployed static asset, hard-refresh
-  with cache bypass (`Ctrl+F5` or `f` and `Shift` reload) before asserting its
+  with cache bypass (`Ctrl+F5` or `f` and `Shift` reload), or use a timestamp
+  query parameter when loading the direct asset URL, before asserting its
   content.
 
 On a Playwright initialization or tool failure, retry once. If it still fails,
