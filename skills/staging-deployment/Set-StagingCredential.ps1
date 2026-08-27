@@ -1,8 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$Target = 'Ezytire.Staging.SFTP',
-    [Parameter(Mandatory = $true)]
-    [string]$UserName
+    [string]$UserName = 'aldrin.d'
 )
 
 Set-StrictMode -Version Latest

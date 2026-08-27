@@ -29,12 +29,17 @@ testing, staging verification, and automated QA.
   Do not block resources for visual, performance, or asset-verification tests.
 - Disable CSS animations and transitions immediately after navigation unless the
   scenario verifies motion or timing behavior.
-- Use explicit UI or network state conditions instead of arbitrary delays, and
-  do not retry after a timed-out condition.
+- Wait for the observable state required by the scenario's expected result,
+  such as a matching result card, success message, changed control state, or
+  required network response. Do not use arbitrary delays; after a timed-out
+  condition, report the blocked or failed validation instead of retrying it.
 - Inspect only the target form or container with
   `playwright-browser_evaluate` or a targeted
-  `playwright-browser_snapshot`; never capture the full-page DOM or scan all
-  elements by default.
+  `playwright-browser_snapshot`. Assert the relevant controls or results within
+  that target; do not use page-wide text, `document.body.innerText`, broad
+  element scans, or `document.querySelectorAll('*')` as passing evidence.
+  Broader inspection is permitted only to diagnose a failed or blocked test,
+  and the reason must be reported.
 - Prefer `playwright-browser_fill_form` for ordinary field entry. Use
   `playwright-browser_type` only when the scenario needs keyboard events, such
   as per-character autocomplete behavior.
