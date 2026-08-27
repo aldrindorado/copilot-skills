@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Triad asset manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "release_ref", "release_commit", "assets"],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "release_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "release_commit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "assets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/asset"
+      }
+    }
+  },
+  "$defs": {
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "asset_type",
+        "repository_source_path",
+        "staging_upload_path",
+        "sha256",
+        "runtime_fingerprint",
+        "runtime_mapping",
+        "activation_dependencies"
+      ],
+      "properties": {
+        "asset_type": {
+          "enum": ["frontend", "server-side", "compiled", "configuration"]
+        },
+        "repository_source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "staging_upload_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "runtime_fingerprint": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runtime_mapping": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": [
+            "expected_runtime_url_or_versioned_filename",
+            "source_registration_or_resolution_evidence"
+          ],
+          "properties": {
+            "expected_runtime_url_or_versioned_filename": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_registration_or_resolution_evidence": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "activation_dependencies": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["required", "artifacts"],
+          "properties": {
+            "required": {
+              "type": "boolean"
+            },
+            "artifacts": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/dependency"
+              }
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "asset_type": {
+                "const": "frontend"
+              }
+            },
+            "required": ["asset_type"]
+          },
+          "then": {
+            "properties": {
+              "runtime_mapping": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "activation_dependencies": {
+                "properties": {
+                  "required": {
+                    "const": true
+                  }
+                },
+                "required": ["required"]
+              }
+            },
+            "required": ["activation_dependencies"]
+          },
+          "then": {
+            "properties": {
+              "activation_dependencies": {
+                "properties": {
+                  "artifacts": {
+                    "minItems": 1
+                  }
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "activation_dependencies": {
+                "properties": {
+                  "artifacts": {
+                    "maxItems": 0
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_type",
+        "repository_source_path",
+        "staging_upload_path",
+        "reason"
+      ],
+      "properties": {
+        "artifact_type": {
+          "enum": [
+            "server-side-selector",
+            "compiled-artifact",
+            "module-variant",
+            "configuration"
+          ]
+        },
+        "repository_source_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "staging_upload_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}
