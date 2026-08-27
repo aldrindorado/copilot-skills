@@ -1,0 +1,9 @@
+{
+  "published": [
+    "dev-testing",
+    "qa-smoke-testing",
+    "pr-with-review",
+    "staging-deployment",
+    "test-deployment"
+  ]
+}
