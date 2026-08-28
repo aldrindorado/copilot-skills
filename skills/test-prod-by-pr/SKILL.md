@@ -1,5 +1,5 @@
 ---
-name: test-deployment
+name: test-prod-by-pr
 description: Verify that one or more approved, merged GitHub pull requests have reached their user-specified production websites. Use when asked to test, validate, or confirm production deployments from PRs.
 ---
 
