@@ -1,70 +1,87 @@
 ---
 name: qa-smoke-testing
-description: Author, execute, and maintain reusable QA smoke-test scenarios for website functionality affected by a deployment. Use when QA needs to validate a Jira ticket's acceptance criteria or rerun a saved affected-feature smoke test.
+description: Author, execute, and maintain reusable QA smoke-test scenarios for website functionality affected by code changes. Use when QA needs to confirm that existing functionality still works as expected after a deployment or change.
+model: kimi-k2.7-code
 ---
 
-Use this skill for Jira-driven, black-box smoke testing of an affected website
-functionality after deployment. It establishes whether the supplied acceptance
-criteria and expected result pass or fail; it does not prove that a specific
-GitHub pull request or source-file change is deployed.
+Use this skill for regression-style, black-box smoke testing of website
+functionality that was affected by a deployment or code change. The goal is to
+confirm that existing behavior still works as expected, not to validate a
+specific Jira ticket, pull request, or source-file diff.
 
 QA does not need access to the application codebase or its GitHub repository.
-Store reusable scenarios in a QA-owned local Git repository, using its
-`.qa/smoke-tests/` directory. Jira remains the source for the ticket,
-acceptance criteria, execution evidence, and defect links.
+Store reusable scenarios in client directories under `.qa\smoke-tests\`.
+
+## Initial setup
+
+On first use, ask the QA user for a local base directory. It may be anywhere on
+the user's machine; do not assume or select it. Under that base, use this
+required client directory for all scenario creation, updates, and output files:
+
+```text
+{qa-base-directory}\.qa\smoke-tests\{client-name}\
+```
+
+Create the `.qa\smoke-tests\{client-name}\` directory when it does not exist.
 
 ## Required inputs
 
 Gather missing inputs one at a time with `ask_user`:
 
-1. Ask for the Jira ticket key and use it as the scenario reference.
-2. Ask for a feature or module key. Normalize it to a kebab-case identifier,
+1. On initial setup, ask for the local base directory before asking for the
+   client.
+2. Ask which client is being tested (for example, `Expressoil` or `Brakes Plus`).
+   Use the client name exactly as it appears in the directory structure under
+   `.qa\smoke-tests\`.
+3. Ask for a feature or module key. Normalize it to a kebab-case identifier,
    such as `checkout-flow`.
-3. Ask for the full target URL and environment. Do not infer a production,
+4. Ask for the full target URL and environment. Do not infer a production,
    staging, or test host.
-4. Ask for the ticket acceptance criteria and the expected observable result.
-   Keep the scope to the affected functionality; do not create a broader
-   targeted-test plan.
-5. Ask whether to run an existing scenario or author/update it.
-6. If the QA-owned scenario repository is not already available in the current
-   workspace, ask for its local path. Do not use the application codebase
-   repository for scenario storage.
+5. Ask for the acceptance criteria and the expected observable result for the
+   affected functionality. Keep the scope to existing behavior; do not create a
+   broader targeted-test plan.
+6. Ask whether to run an existing scenario or author/update it.
 
 ## Scenario storage
 
 Store scenarios at:
 
 ```text
-{qa-scenario-repository}\.qa\smoke-tests\{feature-key}.md
+{qa-base-directory}\.qa\smoke-tests\{client-name}\{feature-key}.md
 ```
 
-1. Check whether the scenario file exists.
+Example clients: `Expressoil`, `Brakes Plus`.
+
+1. Check whether the scenario file exists under the selected client folder.
 2. For **Run Existing**, load the scenario and confirm that its acceptance
-   criteria and expected result still match the Jira ticket. Update the
+   criteria and expected result still match the requested scope. Update the
    scenario first when they differ.
-3. For **Author / Update**, create or revise the scenario from the Jira
+3. For **Author / Update**, create or revise the scenario from the supplied
    acceptance criteria. Every step must have a user action and an observable
    expected result.
-4. Save the scenario locally. Do not commit or push it unless the QA user
-   explicitly asks.
+4. Save the scenario locally in the client folder. Do not commit or push it
+   unless the QA user explicitly asks.
 5. Do not store credentials, MFA codes, personal data, session contents, or
    secrets in the scenario or its execution record.
+6. Treat its acceptance criteria, expected result, and explicitly stated
+   interaction methods as the test contract.
+7. Execute each named journey independently; do not use one journey's result
+   as evidence for another.
 
 Use this schema:
 
 ```markdown
 # QA Smoke Test: {feature-key}
 
-Jira ticket: {ticket-key}
 Owner: {QA owner or team}
 Applicability: {affected feature, site, and supported environments}
 Last reviewed: {YYYY-MM-DD}
 
 ## Acceptance Criteria
-- {ticket acceptance criterion}
+- {acceptance criterion for existing functionality}
 
 ## Expected Result
-{single observable pass condition for the affected functionality}
+{single observable pass condition confirming existing behavior still works}
 
 ## Preconditions
 - {required non-sensitive test state}
@@ -75,21 +92,38 @@ Last reviewed: {YYYY-MM-DD}
    Expected: {observable UI result}
 2. Action: {natural-language user action}
    Expected: {observable UI result}
-
-## Execution Record
-| Executed at | Environment / URL | Tester | Outcome | Jira evidence | Defects |
-| --- | --- | --- | --- | --- | --- |
-| {ISO 8601 timestamp} | {target} | {tester} | Pass / Fail / Blocked | {comment or attachment link} | {linked Jira bugs or none} |
 ```
+
+Do not record per-run execution details in the scenario file. Execution records
+and supporting evidence are written to the client `output` folder only.
+
+## Test-output storage
+
+Write each execution record and supporting evidence as a `.docx` document in
+the client-specific output folder, not in the scenario markdown file:
+
+```text
+{qa-base-directory}\.qa\smoke-tests\{client-name}\output\
+```
+
+1. After each run, write the validation record and any supporting evidence to
+   the client `output` folder.
+2. Name output files with a timestamp and feature key so runs are easy to trace,
+   for example `{feature-key}-{YYYY-MM-DDTHH-mm-ss}.docx`.
+3. Do not store credentials, MFA codes, personal data, session contents, or
+   secrets in output files.
+4. Format DOCX records vertically with headings and paragraphs; do not use wide
+   summary tables.
 
 Keep the reusable scenario and its execution history current:
 
 - Set `Owner`, `Applicability`, and `Last reviewed` when authoring or changing
   the scenario.
-- Add an execution-record row for every run with the exact URL/environment,
-  outcome, and Jira evidence.
-- Update the scenario when the Jira acceptance criteria, expected result, or
-  affected user journey changes. Do not overwrite prior execution evidence.
+- Use the scenario file only for the reusable test definition. Move per-run
+  results, evidence, and matrices to the client `output` folder.
+- Update the scenario when the acceptance criteria, expected result, or affected
+  user journey changes. Do not overwrite prior execution evidence in output
+  files.
 
 ## Safe browser execution
 
@@ -98,14 +132,21 @@ Use Playwright (`playwright-browser_*`) for browser smoke testing:
 - Navigate directly to the supplied target URL.
 - Use the smallest journey that proves the acceptance criteria and expected
   result. Do not validate unrelated pages or features.
+- Follow the scenario's stated journey and expected result. Where no interaction
+  method is specified, use an equivalent safe interaction to complete the step.
+- Preserve an explicitly stated method or control. For example, a required
+  click must be a click on that control, not keyboard navigation. Mark the
+  scenario **Blocked** if an explicit method cannot be performed.
 - For multi-step journeys, batch route setup, navigation, interactions, and
   waits with `playwright-browser_run_code_unsafe`.
 - Disable CSS animations and transitions unless motion or timing is being
   tested.
-- Wait for the observable state required by the scenario's expected result,
-  such as a matching result card, success message, changed control state, or
-  required network response. Do not use arbitrary delays; after a timed-out
-  condition, record the blocked or failed validation instead of retrying it.
+- Before triggering an action, inspect the target component and capture the
+  relevant baseline. Do not assume its result selectors or markup.
+- Wait for the expected post-action state within that component. For dynamic
+  results, assert a changed result or required content, not merely that a
+  container exists or that pre-existing content is present. Do not use
+  arbitrary delays.
 - Inspect only the target component or container with
   `playwright-browser_evaluate` or a targeted snapshot. Assert the relevant
   controls or results within that target; do not use page-wide text,
@@ -132,6 +173,10 @@ Use Playwright (`playwright-browser_*`) for browser smoke testing:
   timestamp query parameter before asserting its content.
 - If Playwright initialization or a required tool fails, retry once. If it
   fails again, record the blocked validation and do not silently switch tools.
+- Before reporting **Fail**, inspect the target component after the failed
+  assertion; a missing assumed selector alone is not failure evidence.
+- Retry each failed journey once from its preconditions. Report both attempts
+  and use **Pass after retry** only if retry passes.
 
 ## Production safety and authentication
 
@@ -146,26 +191,57 @@ Use Playwright (`playwright-browser_*`) for browser smoke testing:
 - Resume only after the user confirms authentication is complete. Pause again
   if the session expires or another challenge appears.
 
-## Results and Jira reporting
+## Results and reporting
 
-Report the outcome as a Jira-focused validation record:
+Report the outcome as a vertical validation record:
 
-| Jira ticket | Target URL / environment | Acceptance criteria | Validation performed | Outcome | Evidence or limitation |
-| --- | --- | --- | --- | --- | --- |
+```text
+# QA Smoke Test Validation Record
+
+Execution timestamp: {ISO 8601 timestamp}
+Client: {client-name}
+Feature: {feature-key}
+Target URL / environment: {target}
+
+## Acceptance Criteria
+- {criterion}
+
+## Expected Result
+{expected result}
+
+## Journey: {journey name}
+Validation performed: {actions taken}
+Outcome: Pass / Fail / Blocked
+Evidence or limitation: {concise evidence}
+
+## Overall Outcome
+Pass / Pass after retry / Fail / Blocked
+
+## Status
+Status: Pass/Fail/Blocked | Client: {client-name} | Target URL: {target} | Failing Selectors/Errors: {details or none}
+```
 
 - **Pass**: Every supplied acceptance criterion and expected result was
   observed.
 - **Fail**: An observable result differs from the expected result. Create or
-  link a Jira defect with reproduction steps, expected and actual results,
-  target environment, and concise evidence.
+  link a defect with reproduction steps, expected and actual results, target
+  environment, and concise evidence.
 - **Blocked**: Authentication, access, safe test data, or an execution error
   prevented validation. State the exact blocker.
+- Use one **Journey** section for each named journey. Include any equivalent
+  interaction and both retry outcomes in that journey's section.
 
-When Jira access is available, add the matrix and final outcome as a comment on
-the source ticket. Include linked defects and the execution timestamp. Do not
-claim that a GitHub PR or individual source file was deployed based on this
-smoke test.
+Persist the report and any evidence to the client output folder:
+
+```text
+{qa-base-directory}\.qa\smoke-tests\{client-name}\output\{feature-key}-{timestamp}.docx
+```
+
+When issue-tracking access is available, add the validation record and final outcome as a
+comment on the relevant ticket. Include linked defects and the execution
+timestamp. Do not claim that a GitHub PR or individual source file was deployed
+based on this smoke test.
 
 For each browser-tested target, also report:
 
-`Status: Pass/Fail/Blocked | Target URL: <URL> | Failing Selectors/Errors: <details or none>`
+`Status: Pass/Fail/Blocked | Client: {client-name} | Target URL: <URL> | Failing Selectors/Errors: <details or none>`
