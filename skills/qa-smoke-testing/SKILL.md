@@ -15,8 +15,29 @@ Store reusable scenarios in client directories under `.qa\smoke-tests\`.
 ## Initial setup
 
 On first use, ask the QA user for a local base directory. It may be anywhere on
-the user's machine; do not assume or select it. Under that base, use this
-required client directory for all scenario creation, updates, and output files:
+the user's machine; do not assume or select it. After the user supplies the
+base directory, initialize one reusable Playwright project for that QA base:
+
+```text
+{qa-base-directory}\.qa\playwright\
+```
+
+1. Create the project with a `package.json`, `playwright.config.ts`, and
+   `tests\` directory when it does not exist. Keep this project separate from
+   every application repository.
+2. Use the project's existing `@playwright/test` dependency and browser
+   installation when available. If either is missing, explain that the isolated
+   runner needs a package installation and Chromium download, then obtain the
+   QA user's approval before installing them.
+3. Configure the runner to execute one worker at a time, retain traces and
+   screenshots only on failure, and use regular Chromium (`channel: 'chromium'`)
+   for high-fidelity headless testing.
+4. Do not initialize a separate runner per client or per scenario. Store
+   generated specs at
+   `{qa-base-directory}\.qa\playwright\tests\{client-name}\`.
+
+Use this required client directory for all scenario creation, updates, and
+output files:
 
 ```text
 {qa-base-directory}\.qa\smoke-tests\{client-name}\
@@ -54,18 +75,23 @@ Example clients: `Expressoil`, `Brakes Plus`.
 
 1. Check whether the scenario file exists under the selected client folder.
 2. For **Run Existing**, load the scenario and confirm that its acceptance
-   criteria and expected result still match the requested scope. Update the
-   scenario first when they differ.
+   criteria, expected result, and automation contract still match the requested
+   scope. Update the scenario and its generated spec first when they differ or
+   the spec is marked stale.
 3. For **Author / Update**, create or revise the scenario from the supplied
    acceptance criteria. Every step must have a user action and an observable
-   expected result.
-4. Save the scenario locally in the client folder. Do not commit or push it
+   expected result. Then resolve its execution mode and create or update the
+   companion Playwright spec before executing the scenario.
+4. Treat the natural-language scenario as the QA contract and its companion
+   Playwright spec as the executable artifact. Do not treat natural-language
+   steps as directly executable or re-interpret them on each run.
+5. Save the scenario and spec locally. Do not commit or push them
    unless the QA user explicitly asks.
-5. Do not store credentials, MFA codes, personal data, session contents, or
+6. Do not store credentials, MFA codes, personal data, session contents, or
    secrets in the scenario or its execution record.
-6. Treat its acceptance criteria, expected result, and explicitly stated
+7. Treat its acceptance criteria, expected result, and explicitly stated
    interaction methods as the test contract.
-7. Execute each named journey independently; do not use one journey's result
+8. Execute each named journey independently; do not use one journey's result
    as evidence for another.
 
 Use this schema:
@@ -87,12 +113,41 @@ Last reviewed: {YYYY-MM-DD}
 - {required non-sensitive test state}
 - {approved test account or session, if applicable}
 
+## Automation
+Mode: auto / headless / headed
+Resolved mode: headless / headed
+Mode reason: {scenario requirement}
+Spec path: {qa-base-directory}\.qa\playwright\tests\{client-name}\{feature-key}.spec.ts
+Spec status: current / stale
+Spec reviewed: {YYYY-MM-DD}
+
+## Automation Contract
+
+### {journey name}
+Target: {full target URL}
+Input locator: {stable locator, if input is required}
+Input value: {safe test value, if input is required}
+Interaction: {click, Enter key, selection, or other explicit method}
+Result locator: {stable locator for the affected component}
+Assertion: {specific observable assertion}
+
 ## Scenario
 1. Action: {natural-language user action}
    Expected: {observable UI result}
 2. Action: {natural-language user action}
    Expected: {observable UI result}
 ```
+
+The automation contract must map every named journey to a stable target,
+locator, interaction, and assertion. Derive it while authoring or updating the
+scenario, verify it against the target, and use it to create the companion
+spec. If a contract cannot be made stable, mark the spec stale and report the
+scenario blocked instead of using a brittle guessed locator.
+
+When the natural-language scenario, acceptance criteria, expected result, or
+automation contract changes, immediately set `Spec status` to `stale`. Do not
+run a stale spec. Update and verify the spec, then set `Spec status` to
+`current` and update `Spec reviewed`.
 
 Do not record per-run execution details in the scenario file. Execution records
 and supporting evidence are written to the client `output` folder only.
@@ -122,13 +177,61 @@ Keep the reusable scenario and its execution history current:
 - Use the scenario file only for the reusable test definition. Move per-run
   results, evidence, and matrices to the client `output` folder.
 - Update the scenario when the acceptance criteria, expected result, or affected
-  user journey changes. Do not overwrite prior execution evidence in output
-  files.
+  user journey changes, and mark its companion spec stale. Do not overwrite
+  prior execution evidence in output files.
 
 ## Safe browser execution
 
-Use Playwright (`playwright-browser_*`) for browser smoke testing:
+Use Playwright for browser smoke testing. Mode selection and spec generation
+are required pre-execution gates:
 
+- Before navigating to the target or executing a supplied scenario, classify
+  and record its required execution mode:
+  - Use **headless** by default for deterministic functional, regression,
+    API-backed UI, form, and smoke scenarios with DOM, network, or accessibility
+    assertions. It is Playwright Test's default mode and is appropriate for
+    unattended or CI execution.
+  - Use **headed** when the scenario requires human observation or interaction:
+    explicit visual/layout review, interactive authentication or MFA, Playwright
+    Inspector debugging, browser chrome/native UI behavior, or diagnosing a
+    headless-only failure.
+  - Run a focused headed confirmation after a passing headless test only when
+    visual fidelity, browser-specific behavior, or a reported headless/headed
+    discrepancy is part of the acceptance criteria. Do not duplicate ordinary
+    functional runs.
+  - For high-fidelity Chromium testing in headless mode, prefer Playwright's
+    regular Chromium channel (`channel: 'chromium'`) over the default headless
+    shell when the project's configuration permits it. Preserve the project's
+    existing browser and launch configuration otherwise.
+  - Execute the scenario in the selected mode. Use the existing Playwright Test
+    runner and configuration when it is available. `npx playwright test` is
+    headless only when the selected project's configuration does not override
+    it; use `--headed` to require a headed run.
+  - `playwright-browser_*` controls a provided browser session and does not
+    expose an execution-mode switch. Do not substitute it for a scenario whose
+    selected mode must be enforced. Use it only for mode-agnostic inspection or
+    when the user explicitly accepts a non-mode-specific result.
+  - If no available runner can execute the selected mode without changing shared
+    configuration, mark the scenario **Blocked** and report the exact
+    constraint. Do not report a pass as though it ran in the selected mode.
+- Generate or update the scenario's companion spec from the automation contract
+  before its first execution. Preserve the natural-language journey names as
+  independently runnable Playwright tests.
+- Run only a current companion spec in the resolved mode:
+
+  ```powershell
+  Set-Location "{qa-base-directory}\.qa\playwright"
+  $testFile = "tests\{client-name}\{feature-key}.spec.ts"
+  npm run test:headless -- ([regex]::Escape($testFile))
+  npm run test:headed -- ([regex]::Escape($testFile))
+  ```
+
+  The mode evaluation determines which command is valid. `test:headless` must
+  enforce `headless: true` in the shared runner configuration, and
+  `test:headed` must pass `--headed`. Do not run both unless the acceptance
+  criteria require the focused headed confirmation.
+- State the selected mode and its reason in the validation record before the
+  journey outcomes. A record that omits either is incomplete.
 - Navigate directly to the supplied target URL.
 - Use the smallest journey that proves the acceptance criteria and expected
   result. Do not validate unrelated pages or features.
@@ -202,6 +305,8 @@ Execution timestamp: {ISO 8601 timestamp}
 Client: {client-name}
 Feature: {feature-key}
 Target URL / environment: {target}
+Execution mode: headless / headed
+Mode reason: {scenario requirement or execution constraint}
 
 ## Acceptance Criteria
 - {criterion}
@@ -218,7 +323,7 @@ Evidence or limitation: {concise evidence}
 Pass / Pass after retry / Fail / Blocked
 
 ## Status
-Status: Pass/Fail/Blocked | Client: {client-name} | Target URL: {target} | Failing Selectors/Errors: {details or none}
+Status: Pass/Fail/Blocked | Client: {client-name} | Target URL: {target} | Mode: headless/headed ({reason}) | Failing Selectors/Errors: {details or none}
 ```
 
 - **Pass**: Every supplied acceptance criterion and expected result was
@@ -244,4 +349,4 @@ based on this smoke test.
 
 For each browser-tested target, also report:
 
-`Status: Pass/Fail/Blocked | Client: {client-name} | Target URL: <URL> | Failing Selectors/Errors: <details or none>`
+`Status: Pass/Fail/Blocked | Client: {client-name} | Target URL: <URL> | Mode: headless/headed ({reason}) | Failing Selectors/Errors: <details or none>`
