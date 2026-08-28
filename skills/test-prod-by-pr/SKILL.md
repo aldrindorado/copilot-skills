@@ -31,8 +31,8 @@ Gather these inputs one at a time with `ask_user`:
 
 Use a normalized validation matrix for all subsequent work:
 
-| PR | Production URL | Expected behavior | Execution mode / reason | Release gate | Validation status |
-| --- | --- | --- | --- | --- | --- |
+| PR | Production URL | Expected behavior | Release gate | Validation status |
+| --- | --- | --- | --- | --- |
 
 Each PR-to-URL pair is a separate validation target. Avoid duplicate browser
 tests only when the same target and expected behavior are identical.
@@ -124,40 +124,8 @@ Use production-safe test data only:
 
 ### Playwright execution guidance
 
-Use Playwright for all browser-based validation. Mode selection is a required
-pre-execution gate:
+Use Playwright (`playwright-browser_*`) for all browser-based validation:
 
-- Before navigating to the target or executing a supplied scenario, classify
-  and record its required execution mode:
-  - Use **headless** by default for deterministic functional, regression,
-    API-backed UI, form, and smoke scenarios with DOM, network, or accessibility
-    assertions. It is Playwright Test's default mode and is appropriate for
-    unattended or CI execution.
-  - Use **headed** when the scenario requires human observation or interaction:
-    explicit visual/layout review, interactive authentication or MFA, Playwright
-    Inspector debugging, browser chrome/native UI behavior, or diagnosing a
-    headless-only failure.
-  - Run a focused headed confirmation after a passing headless test only when
-    visual fidelity, browser-specific behavior, or a reported headless/headed
-    discrepancy is part of the acceptance criteria. Do not duplicate ordinary
-    functional runs.
-  - For high-fidelity Chromium testing in headless mode, prefer Playwright's
-    regular Chromium channel (`channel: 'chromium'`) over the default headless
-    shell when the project's configuration permits it. Preserve the project's
-    existing browser and launch configuration otherwise.
-  - Execute the scenario in the selected mode. Use the existing Playwright Test
-    runner and configuration when it is available. `npx playwright test` is
-    headless only when the selected project's configuration does not override
-    it; use `--headed` to require a headed run.
-  - `playwright-browser_*` controls a provided browser session and does not
-    expose an execution-mode switch. Do not substitute it for a scenario whose
-    selected mode must be enforced. Use it only for mode-agnostic inspection or
-    when the user explicitly accepts a non-mode-specific result.
-  - If no available runner can execute the selected mode without changing shared
-    configuration, mark the scenario **Not validated** and report the exact
-    constraint. Do not report a pass as though it ran in the selected mode.
-- State the selected mode and its reason in the deployment result before
-  reporting the scenario outcome. A result that omits either is incomplete.
 - Navigate directly to the mapped production URL rather than traversing global
   navigation flows.
 - Disable CSS animations and transitions immediately after navigation unless the
@@ -197,8 +165,8 @@ report the exact blocked validation rather than switching tools silently.
 Report a concise deployment result with:
 
 1. A validation matrix for every mapped PR-to-production-URL target: PR,
-   production URL, changed file or behavior, selected execution mode and
-   reason, validation performed, result, and evidence/limitation.
+   production URL, changed file or behavior, validation performed, result, and
+   evidence/limitation.
 2. A final status for each PR-to-URL target:
    - **Validated deployed** — every changed behavior has direct or runtime
      production evidence.
@@ -215,7 +183,7 @@ Report a concise deployment result with:
 
 Report each browser-tested target as a compact status block when appropriate:
 
-`Status: Pass/Fail | Target URL: <URL> | Mode: headless/headed ({reason}) | Failing Selectors/Errors: <details or none>`
+`Status: Pass/Fail | Target URL: <URL> | Failing Selectors/Errors: <details or none>`
 
 Never equate a successful HTTP response, a loaded home page, or a merged PR
 with confirmation that the change was deployed. State the exact evidence that
