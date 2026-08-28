@@ -1,6 +1,6 @@
 ---
 name: staging-deployment
-description: Safely deploy Ezytire web files to staging through SFTP using the operator's assigned account. Use when asked to deploy, upload, or preview changes on staging.
+description: Safely deploy Ezytire web files to staging through SFTP, including uncommitted changes, committed branch changes, or parent-authorized manifest assets. Use when asked to deploy, upload, or preview changes on staging.
 ---
 
 Use the sibling `Deploy-Staging.ps1` script from the Ezytire repository root.
@@ -13,35 +13,12 @@ approved file list, staging paths, release commit, and SHA-256 hashes. The
 script validates it before upload and hashes each source file again immediately
 before transfer.
 
-## One-time workstation setup
+## 1. Resolve the deployment authority and target
 
-Each operator needs an individual staging SFTP account assigned by the
-staging-server administrator. Never share an account or enter a password in
-chat, source control, command lines, or configuration files.
-
-Download the official WinSCP .NET automation package from
-<https://winscp.net/eng/docs/library_install>, then extract its contents into
-this skill's `WinSCP` directory. Keep `WinSCP.exe` and `WinSCPnet.dll` in the
-same directory and retain the package's license files. The package is not
-stored in this repository.
-
-Save the assigned account password in Windows Credential Manager:
-
-```powershell
-& "$HOME\.copilot\skills\staging-deployment\Set-StagingCredential.ps1" -UserName $userName
-```
-
-The staging connection is `52.44.202.235:22`. Its pinned server fingerprint is:
-
-```text
-ssh-rsa 1024 Yxo6FcvF30RCXrUQYJep89aRHkX8a6MAMY2XwFXPV6w
-```
-
-## 1. Resolve authority and target
-
-For a direct deployment, clear the target saved by a previous chat, ask for
-the remote directory unless it is already supplied, and save its normalized
-form. Reuse it only for later deployments in the same chat.
+For a direct deployment, reset any target saved by a previous chat, then ask
+for the remote directory unless the request already names one. Accept
+`EOSB-757` or `/EOSB-757`; save its normalized form and reuse it for later
+deployments in this chat unless the user changes it.
 
 ```powershell
 . "$HOME\.copilot\skills\staging-deployment\StagingDeploymentSettings.ps1"
@@ -50,19 +27,40 @@ $remoteRoot = Set-StagingDeploymentRemoteRoot -RemoteRoot $chosenRemoteRoot
 $sourceRoot = (Get-Location).Path
 ```
 
-For a parent-authorized deployment, its checkout, remote root, and manifest
-are authoritative. Do not substitute the local checkout or select another
-target.
+For a parent-authorized deployment, the parent-supplied checkout, remote root,
+and manifest are authoritative. Do not clear the saved root, ask for another
+directory, or use the deployment session's checkout. Save the supplied root
+once with `Set-StagingDeploymentRemoteRoot`.
 
-## 2. Select scope and preview
+Do not change the configured SFTP host or username without an explicit user
+request.
+
+## 2. Select the release scope
 
 Direct deployments discover added and modified uncommitted web files by
-default. Use `-IncludePaths` for an explicit subset, or
-`-ChangeScope Branch -BaseRef development` for committed branch changes.
-Before branch preview, explain any changed files outside `Tireweb Sites\Web`
-and ask whether to deploy web files only or build and deploy their artifacts.
+default. Use these preview options when applicable:
 
-Create a manifest outside the repository and preview once:
+```powershell
+# Explicit files
+-IncludePaths 'Tireweb Sites/Web/App_Modules/248-GMapLiteStore/EOv2.ascx'
+
+# Committed changes only
+-ChangeScope Branch -BaseRef development
+```
+
+Before previewing branch changes, identify source changes outside
+`Tireweb Sites\Web`. Explain that they have no FileZilla-style mapping, then
+ask whether to deploy the web files only or build and deploy the required
+artifacts. Stop for clarification when the intended web scope is ambiguous.
+
+Parent-authorized releases use the supplied manifest and do not scan Git
+changes. Do not combine `-DeploymentManifestPath` with `-IncludePaths`.
+
+## 3. Preview and create the immutable manifest
+
+For a direct deployment, create the manifest outside the repository and run
+one preview command. Include the selected scope options from step 2 when
+needed.
 
 ```powershell
 $manifestDirectory = Join-Path $env:LOCALAPPDATA 'GitHub Copilot\staging-deployment'
@@ -71,41 +69,75 @@ $manifestPath = Join-Path $manifestDirectory ("release-{0}.json" -f [System.Guid
 & "$HOME\.copilot\skills\staging-deployment\Deploy-Staging.ps1" `
     -RepositoryRoot $sourceRoot `
     -RemoteRoot $remoteRoot `
-    -UserName $userName `
     -CreateDeploymentManifestPath $manifestPath `
     -WhatIf
 ```
 
-Parent-authorized releases preview their supplied manifest with
-`-DeploymentManifestPath $manifestPath` instead. Do not combine a manifest
-with `-IncludePaths`.
-
-## 3. Approve and upload
-
-Standard mode requires explicit user confirmation after the preview. Autopilot
-is allowed only with explicit user or parent authorization; it skips only that
-confirmation.
+For a parent-authorized release, use its existing manifest:
 
 ```powershell
 & "$HOME\.copilot\skills\staging-deployment\Deploy-Staging.ps1" `
     -RepositoryRoot $sourceRoot `
     -RemoteRoot $remoteRoot `
-    -UserName $userName `
+    -DeploymentManifestPath $manifestPath `
+    -WhatIf
+```
+
+Report the selected files, local-to-remote mappings, and manifest path. A
+preview never authorizes an upload by itself.
+
+## 4. Approve and upload
+
+In standard mode, obtain explicit user confirmation after a successful preview.
+In autopilot mode, proceed only when the user or parent explicitly authorizes
+autopilot; it skips only the confirmation, never target selection, scope
+validation, or preview.
+
+Upload immediately after the approved preview:
+
+```powershell
+& "$HOME\.copilot\skills\staging-deployment\Deploy-Staging.ps1" `
+    -RepositoryRoot $sourceRoot `
+    -RemoteRoot $remoteRoot `
     -DeploymentManifestPath $manifestPath
 ```
 
-For browser-served static assets, require a public staging URL and add:
-
-```powershell
--VerificationAssets 'Tireweb Sites/Web/path/to/asset.js|https://staging.example.com/path/to/asset.js'
-```
-
-The script cache-bypass fetches that URL and compares its SHA-256 hash with the
-manifest. Do not use it for server-side source files that are not directly
+When the release includes a browser-served static asset, require its public
+staging URL and add a verification mapping. The tool adds a cache-bypass query
+string, downloads the response, and compares its SHA-256 hash to the manifest.
+Do not use this option for server-side source files that are not directly
 served.
 
-## 4. Report or stop
+```powershell
+-VerificationAssets 'Tireweb Sites/Web/App_Modules/248-GMapLiteStore/Scripts/GoogleReviews.js|https://eo-qa1.tireco-op.com/App_Modules/248-GMapLiteStore/Scripts/GoogleReviews.js?v=6'
+```
 
-Report all deployed repository-relative and remote paths. On failure, report
-the emitted error and resolve the cause before retrying. Do not rerun a
-successful command only to collect extra evidence.
+Parent-authorized deployments use exactly one combined preview command and one
+combined revalidation-and-upload command. Do not issue standalone probes for
+their manifest, hashes, target root, or scope.
+
+## 5. Report or stop
+
+On success, report every deployed repository-relative and remote path. On
+failure, report the emitted error and resolve its cause before trying again.
+Never rerun a successful command only to gather extra evidence.
+
+## Authentication
+
+The connection is `aldrin.d@52.44.202.235:22`, using the current user's
+Windows Credential Manager entry and the bundled WinSCP library. The pinned
+server fingerprint is:
+
+```text
+ssh-rsa 1024 Yxo6FcvF30RCXrUQYJep89aRHkX8a6MAMY2XwFXPV6w
+```
+
+Before the first deployment, open an interactive local PowerShell terminal:
+
+```powershell
+& "$HOME\.copilot\skills\staging-deployment\Set-StagingCredential.ps1"
+```
+
+The credential prompt is the only place to enter the password. Never place it
+in chat, source control, command lines, configuration files, or FileZilla's
+`sites.xml`.

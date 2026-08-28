@@ -1,17 +1,11 @@
 [CmdletBinding()]
 param(
     [string]$KeyPath = (Join-Path $HOME '.ssh\ezytire-staging'),
-    [Parameter(Mandatory = $true)]
-    [string]$UserName,
-    [string]$Comment
+    [string]$Comment = 'aldrin.d@ezytire-staging'
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-
-if ([string]::IsNullOrWhiteSpace($Comment)) {
-    $Comment = $UserName + '@ezytire-staging'
-}
 
 if (-not (Get-Command ssh-keygen.exe -ErrorAction SilentlyContinue)) {
     throw 'Windows OpenSSH Client is required to generate a staging key.'
@@ -44,5 +38,5 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host ''
-Write-Host ("Give this public key to the staging-server administrator for the {0} account:" -f $UserName)
+Write-Host 'Give this public key to the staging-server administrator for the aldrin.d account:'
 Get-Content -LiteralPath $publicKeyPath

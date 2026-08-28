@@ -11,8 +11,7 @@ param(
     [string]$BaseRef = 'development',
     [string]$HostName = '52.44.202.235',
     [int]$Port = 22,
-    [Parameter(Mandatory = $true)]
-    [string]$UserName,
+    [string]$UserName = 'aldrin.d',
     [Parameter(Mandatory = $true)]
     [string]$RemoteRoot,
     [string]$CredentialTarget = 'Ezytire.Staging.SFTP',
