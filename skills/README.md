@@ -1,4 +1,4 @@
-# Available skills
+# Published skills
 
 This directory contains the team's published GitHub Copilot skills. Each skill
 is installed from its own directory and must contain a `SKILL.md` file.
