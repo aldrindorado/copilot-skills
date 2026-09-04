@@ -1,6 +1,6 @@
 ---
 name: deploy-developer
-description: Create a nested developer session configured with GPT-5.6 Luna, maximum reasoning effort, and the 1.1M long-context setting. Use when the user asks to create, start, launch, deploy, or spin up a nested session with developer settings or a developer configuration.
+description: Create a nested developer session configured with GPT-5.6 Luna, maximum reasoning effort, and the 1.1M long-context setting. Use when the user asks to create, start, launch, deploy, or spin up a nested session, developer sub agent, developer sub-agent, or other developer session with developer settings or a developer configuration.
 ---
 
 # Deploy Developer
