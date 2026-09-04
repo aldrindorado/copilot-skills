@@ -1,5 +1,6 @@
 {
   "published": [
+    "deploy-developer",
     "dev-testing",
     "qa-smoke-testing",
     "pr-with-review",

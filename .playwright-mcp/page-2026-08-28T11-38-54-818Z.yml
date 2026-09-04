@@ -1,0 +1,671 @@
+- generic [ref=e3]:
+  - generic [ref=e6]:
+    - link [ref=e8] [cursor=pointer]:
+      - /url: /
+      - img "Brakes Plus" [ref=e9]
+    - generic [ref=e10]:
+      - list:
+        - listitem [ref=e11]:
+          - link [ref=e12] [cursor=pointer]:
+            - /url: /stores/
+            - paragraph [ref=e14]: Locations
+        - listitem [ref=e15]:
+          - link [ref=e16] [cursor=pointer]:
+            - /url: /schedule-appointment/?s=1
+            - paragraph [ref=e18]: Appointments
+        - listitem [ref=e19]:
+          - link [ref=e20] [cursor=pointer]:
+            - /url: /offers/
+            - paragraph [ref=e22]: Coupons
+        - listitem [ref=e23]:
+          - link [ref=e24] [cursor=pointer]:
+            - /url: /auto-service/
+            - paragraph [ref=e26]: Services
+    - generic [ref=e28] [cursor=pointer]
+  - generic [ref=e31]:
+    - generic [ref=e32]:
+      - heading "BRAKES PLUS" [level=2] [ref=e33]
+      - generic [ref=e34] [cursor=pointer]
+    - generic [ref=e37]:
+      - combobox "Search query" [ref=e38]
+      - generic [ref=e39]: Use the up and down arrows to select a result. Press enter to go to the selected search result. Touch device users can use touch and swipe gestures.
+      - status [ref=e40]
+    - list [ref=e41]:
+      - list [ref=e42]:
+        - listitem [ref=e43]:
+          - link [ref=e45] [cursor=pointer]:
+            - /url: /stores/
+            - heading "Locations" [level=2] [ref=e47]
+        - listitem [ref=e48]:
+          - link [ref=e50] [cursor=pointer]:
+            - /url: /schedule-appointment/?s=1
+            - heading "Appointments" [level=2] [ref=e52]
+        - listitem [ref=e53]:
+          - link [ref=e55] [cursor=pointer]:
+            - /url: /offers/
+            - heading "Coupons" [level=2] [ref=e57]
+        - listitem [ref=e58]:
+          - link [ref=e60] [cursor=pointer]:
+            - /url: /credit-card/
+            - heading "Financing" [level=2] [ref=e62]
+      - tablist [ref=e63]:
+        - tab [ref=e65]:
+          - button [expanded] [ref=e66] [cursor=pointer]:
+            - heading "All Services" [level=2] [ref=e68]
+        - tab [ref=e71]:
+          - button [expanded] [ref=e72] [cursor=pointer]:
+            - heading "Our Company" [level=2] [ref=e74]
+  - generic [ref=e76]:
+    - generic [ref=e77]:
+      - heading "Find a Brakes Plus location near you" [level=1] [ref=e79]
+      - generic [ref=e80]:
+        - textbox "Search by City, State, or Zip" [ref=e81]
+        - button "Use My Location" [ref=e82] [cursor=pointer]
+      - paragraph [ref=e85]: Please enable device to detect your location
+    - generic [ref=e88]:
+      - generic:
+        - button "Keyboard shortcuts"
+      - region "Map" [ref=e89]
+      - generic [ref=e90]:
+        - generic [ref=e137]:
+          - generic:
+            - generic:
+              - generic:
+                - button "Ada, OK - Ada" [ref=e139] [cursor=pointer]
+                - button "Allen, TX - Wetsel" [ref=e141] [cursor=pointer]
+                - button "Ankeny, IA - Delaware Square" [ref=e143] [cursor=pointer]
+                - button "Ankeny, IA - Oralabor" [ref=e145] [cursor=pointer]
+                - button "Anna, TX - Avery Pointe" [ref=e147] [cursor=pointer]
+                - button "Ardmore, OK - Ardmore" [ref=e149] [cursor=pointer]
+                - button "Arlington, TX - Mineral Springs" [ref=e151] [cursor=pointer]
+                - button "Arlington, TX - Riverview Village" [ref=e153] [cursor=pointer]
+                - button "Arlington, TX - South Arlington" [ref=e155] [cursor=pointer]
+                - button "Arvada, CO - Old Towne Arvada" [ref=e157] [cursor=pointer]
+                - button "Arvada, CO - Whisper Village" [ref=e159] [cursor=pointer]
+                - button "Aubrey, TX - Providence" [ref=e161] [cursor=pointer]
+                - button "Aurora, CO - East Iliff Plaza" [ref=e163] [cursor=pointer]
+                - button "Aurora, CO - Expo Park" [ref=e165] [cursor=pointer]
+                - button "Aurora, CO - Green Valley Ranch" [ref=e167] [cursor=pointer]
+                - button "Aurora, CO - Tallyn's Reach" [ref=e169] [cursor=pointer]
+                - button "Austin, TX - Anderson Mill Rd" [ref=e171] [cursor=pointer]
+                - button "Avondale, AZ - Palmilla" [ref=e173] [cursor=pointer]
+                - button "Bartonville, TX - Lantana Town Center" [ref=e175] [cursor=pointer]
+                - button "Bellevue, NE - Bellevue West" [ref=e177] [cursor=pointer]
+                - button "Boulder, CO - Arapahoe" [ref=e179] [cursor=pointer]
+                - button "Brakes Plus - Belton, TX - Belton (Coming Soon!)" [ref=e181] [cursor=pointer]
+                - button "Brighton, CO - Prairie Center" [ref=e183] [cursor=pointer]
+                - button "Buckeye, AZ - Sundance Town Center" [ref=e185] [cursor=pointer]
+                - button "Carrollton, TX - Frankford" [ref=e187] [cursor=pointer]
+                - button "Casa Grande, AZ - Florence Blvd" [ref=e189] [cursor=pointer]
+                - button "Castle Rock, CO - Milestone Crossing" [ref=e191] [cursor=pointer]
+                - button "Cedar Falls, IA - Cedar Prairie Trail" [ref=e193] [cursor=pointer]
+                - button "Cedar Rapids, IA - Kenwood Park" [ref=e195] [cursor=pointer]
+                - button "Cedar Rapids, IA - Westwood Plaza" [ref=e197] [cursor=pointer]
+                - button "Celina, TX - Light Farms" [ref=e199] [cursor=pointer]
+                - button "Centennial, CO - Smoky Hill" [ref=e201] [cursor=pointer]
+                - button "Centennial, CO - Walnut Hills" [ref=e203] [cursor=pointer]
+                - button "Cheyenne, WY - Dell Range" [ref=e205] [cursor=pointer]
+                - button "Cheyenne, WY - The Ridge" [ref=e207] [cursor=pointer]
+                - button "Clive, IA - Country Club Square" [ref=e209] [cursor=pointer]
+                - button "Colleyville, TX - Colleyville City Park" [ref=e211] [cursor=pointer]
+                - button "Colorado Springs, CO - Austin Bluffs" [ref=e213] [cursor=pointer]
+                - button "Colorado Springs, CO - Barnes Rd" [ref=e215] [cursor=pointer]
+                - button "Colorado Springs, CO - Briargate" [ref=e217] [cursor=pointer]
+                - button "Colorado Springs, CO - Broadmoor" [ref=e219] [cursor=pointer]
+                - button "Colorado Springs, CO - Cimarron Hills" [ref=e221] [cursor=pointer]
+                - button "Colorado Springs, CO - Knob Hill" [ref=e223] [cursor=pointer]
+                - button "Colorado Springs, CO - Nevada Avenue" [ref=e225] [cursor=pointer]
+                - button "Colorado Springs, CO - Palmer Park" [ref=e227] [cursor=pointer]
+                - button "Colorado Springs, CO - Powers Peak Center" [ref=e229] [cursor=pointer]
+                - button "Colorado Springs, CO - Tallgrass at the Ranch" [ref=e231] [cursor=pointer]
+                - button "Commerce City, CO - Reunion" [ref=e233] [cursor=pointer]
+                - button "Coppell, TX - Riverchase" [ref=e235] [cursor=pointer]
+                - button "Council Bluffs, IA - Manawa" [ref=e237] [cursor=pointer]
+                - button "Council Bluffs, IA - West Broadway" [ref=e239] [cursor=pointer]
+                - button "Dallas, TX - Frankford Center" [ref=e241] [cursor=pointer]
+                - button "Dallas, TX - Love Field" [ref=e243] [cursor=pointer]
+                - button "Dallas, TX - Preston Trail" [ref=e245] [cursor=pointer]
+                - button "Dallas, TX - The Galleria" [ref=e247] [cursor=pointer]
+                - button "Dallas, TX - Uptown" [ref=e249] [cursor=pointer]
+                - button "Davenport, IA - Davenport Commons" [ref=e251] [cursor=pointer]
+                - button "Davenport, IA - Kimberly Road" [ref=e253] [cursor=pointer]
+                - button "Denton, TX - Denton Center" [ref=e255] [cursor=pointer]
+                - button "Denton, TX - South Loop" [ref=e257] [cursor=pointer]
+                - button "Denver, CO - Harvey Park" [ref=e259] [cursor=pointer]
+                - button "Denver, CO - Quebec Square" [ref=e261] [cursor=pointer]
+                - button "Denver, CO - University Hills" [ref=e263] [cursor=pointer]
+                - button "Dubuque, IA - Dubuque" [ref=e265] [cursor=pointer]
+                - button "Duncanville, TX - Duncanville" [ref=e267] [cursor=pointer]
+                - button "El Reno, OK - El Reno" [ref=e269] [cursor=pointer]
+                - button "Elizabeth, CO - Wild Pointe" [ref=e271] [cursor=pointer]
+                - button "Englewood, CO - Tech Center East" [ref=e273] [cursor=pointer]
+                - button "Erie, CO - Vista Ridge" [ref=e275] [cursor=pointer]
+                - button "Euless, TX - Fair Oaks" [ref=e277] [cursor=pointer]
+                - button "Fate, TX - Fate" [ref=e279] [cursor=pointer]
+                - button "Flagstaff, AZ - Flagstaff Mall" [ref=e281] [cursor=pointer]
+                - button "Fort Collins, CO - The Landings" [ref=e283] [cursor=pointer]
+                - button "Fort Worth, TX - Avondale" [ref=e285] [cursor=pointer]
+                - button "Fort Worth, TX - Coventry Hills" [ref=e287] [cursor=pointer]
+                - button "Fort Worth, TX - Crowley" [ref=e289] [cursor=pointer]
+                - button "Fort Worth, TX - Golden Triangle" [ref=e291] [cursor=pointer]
+                - button "Fort Worth, TX - Kingswood Place" [ref=e293] [cursor=pointer]
+                - button "Fort Worth, TX - Saginaw" [ref=e295] [cursor=pointer]
+                - button "Fort Worth, TX - Summerfields Village" [ref=e297] [cursor=pointer]
+                - button "Fort Worth, TX - Westover Village" [ref=e299] [cursor=pointer]
+                - button "Fort Worth, TX - White Settlement" [ref=e301] [cursor=pointer]
+                - button "Frisco, TX - El Dorado" [ref=e303] [cursor=pointer]
+                - button "Frisco, TX - Legacy" [ref=e305] [cursor=pointer]
+                - button "Frisco, TX - Preston Vineyard" [ref=e307] [cursor=pointer]
+                - button "Garland, TX - Camelot" [ref=e309] [cursor=pointer]
+                - button "Gilbert, AZ - Chandler Heights Village" [ref=e311] [cursor=pointer]
+                - button "Gilbert, AZ - The Islands" [ref=e313] [cursor=pointer]
+                - button "Gilbert, AZ - The Spectrum" [ref=e315] [cursor=pointer]
+                - button "Gilbert, AZ - Val Vista Lakes" [ref=e317] [cursor=pointer]
+                - button "Glendale, AZ - Lexington Place" [ref=e319] [cursor=pointer]
+                - button "Glendale, CO - Cherry Creek" [ref=e321] [cursor=pointer]
+                - button "Goodyear, AZ - Canyon Trails" [ref=e323] [cursor=pointer]
+                - button "Grand Junction, CO - Rimrock" [ref=e325] [cursor=pointer]
+                - button "Grand Prairie, TX - Westchester" [ref=e327] [cursor=pointer]
+                - button "Greeley, CO - Willow Station" [ref=e329] [cursor=pointer]
+                - button "Greenville, TX - Greenville" [ref=e331] [cursor=pointer]
+                - button "Grimes, IA - Gateway" [ref=e333] [cursor=pointer]
+                - button "Harker Heights, TX - Harker Heights" [ref=e335] [cursor=pointer]
+                - button "Hiawatha, IA - Hiawatha" [ref=e337] [cursor=pointer]
+                - button "Highland Village, TX - Highland Forest" [ref=e339] [cursor=pointer]
+                - button "Highlands Ranch, CO - Westridge" [ref=e341] [cursor=pointer]
+                - button "Hudson Oaks, TX" [ref=e343] [cursor=pointer]
+                - button "Iowa City, IA - Miller-Orchard" [ref=e345] [cursor=pointer]
+                - button "Johnstown, CO - 25-34" [ref=e347] [cursor=pointer]
+                - button "Kaufman, TX - Kaufman (Coming Soon!)" [ref=e349] [cursor=pointer]
+                - button "Killeen, TX - Killeen Crossing" [ref=e351] [cursor=pointer]
+                - button "Kyle, TX - Plum Creek (Coming Soon!)" [ref=e353] [cursor=pointer]
+                - button "Lake Worth, TX - Firehall Lane" [ref=e355] [cursor=pointer]
+                - button "Lakewood, CO - Westland Town Center" [ref=e357] [cursor=pointer]
+                - button "Laveen, AZ - Estrella Mountain Village" [ref=e359] [cursor=pointer]
+                - button "Lewisville, TX - Denco" [ref=e361] [cursor=pointer]
+                - button "Lewisville, TX - Garden Park" [ref=e363] [cursor=pointer]
+                - button "Lewisville, TX - Round Grove Crossing" [ref=e365] [cursor=pointer]
+                - button "Lewisville, TX - The Colony" [ref=e367] [cursor=pointer]
+                - button "Liberty Hill, TX - Liberty Park" [ref=e369] [cursor=pointer]
+                - button "Lincoln, NE - Culler" [ref=e371] [cursor=pointer]
+                - button "Lincoln, NE - North Star Crossing" [ref=e373] [cursor=pointer]
+                - button "Lincoln, NE - Pine Lake Road" [ref=e375] [cursor=pointer]
+                - button "Litchfield Park, AZ - Jackrabbit Ranch" [ref=e377] [cursor=pointer]
+                - button "Little Elm, TX - Little Elm Marketplace" [ref=e379] [cursor=pointer]
+                - button "Littleton, CO - Governor's Ranch" [ref=e381] [cursor=pointer]
+                - button "Littleton, CO - Highlands Center" [ref=e383] [cursor=pointer]
+                - button "Littleton, CO - Ken Caryl" [ref=e385] [cursor=pointer]
+                - button "Longmont, CO - Firestone" [ref=e387] [cursor=pointer]
+                - button "Longmont, CO - Safeway Plaza" [ref=e389] [cursor=pointer]
+                - button "Loveland, CO - Orchards Center" [ref=e391] [cursor=pointer]
+                - button "Manor, TX - Manor" [ref=e393] [cursor=pointer]
+                - button "Marana, AZ - Marana (Coming Soon!)" [ref=e395] [cursor=pointer]
+                - button "Marble Falls, TX - Marble Falls" [ref=e397] [cursor=pointer]
+                - button "Maricopa, AZ - Edison Pointe" [ref=e399] [cursor=pointer]
+                - button "McKinney, TX - Cameron Crossing" [ref=e401] [cursor=pointer]
+                - button "McKinney, TX - Lake Forest (Coming Soon!)" [ref=e403] [cursor=pointer]
+                - button "Mesa, AZ - Country Club" [ref=e405] [cursor=pointer]
+                - button "Mesa, AZ - Parkwood Ranch" [ref=e407] [cursor=pointer]
+                - button "Monument, CO - Jackson Creek" [ref=e409] [cursor=pointer]
+                - button "Norman, OK - Main St" [ref=e411] [cursor=pointer]
+                - button "Norman, OK - S Norman Classen" [ref=e413] [cursor=pointer]
+                - button "North Richland Hills, TX - Davis Towne Crossing" [ref=e415] [cursor=pointer]
+                - button "Oklahoma City, OK - May Ave" [ref=e417] [cursor=pointer]
+                - button "Oklahoma City, OK - Penn Ave" [ref=e419] [cursor=pointer]
+                - button "Oklahoma City, OK - Southwest" [ref=e421] [cursor=pointer]
+                - button "Oklahoma City, OK - Yukon (Coming Soon!)" [ref=e423] [cursor=pointer]
+                - button "Omaha, NE - 90th Street" [ref=e425] [cursor=pointer]
+                - button "Omaha, NE - Aspen Creek" [ref=e427] [cursor=pointer]
+                - button "Omaha, NE - Oakview Plaza" [ref=e429] [cursor=pointer]
+                - button "Omaha, NE - Pacific Springs" [ref=e431] [cursor=pointer]
+                - button "Omaha, NE - Ridgeview" [ref=e433] [cursor=pointer]
+                - button "Omaha, NE - Saddle Creek" [ref=e435] [cursor=pointer]
+                - button "Omaha, NE - Shoppes at Elk Creek" [ref=e437] [cursor=pointer]
+                - button "Omaha, NE - West Omaha" [ref=e439] [cursor=pointer]
+                - button "Omaha, NE - Whispering Ridge" [ref=e441] [cursor=pointer]
+                - button "Palestine, TX - Palestine" [ref=e443] [cursor=pointer]
+                - button "Papillion, NE - La Vista" [ref=e445] [cursor=pointer]
+                - button "Papillion, NE - Papillion Park" [ref=e447] [cursor=pointer]
+                - button "Paris, TX - Paris" [ref=e449] [cursor=pointer]
+                - button "Parker, CO - Crown Point" [ref=e451] [cursor=pointer]
+                - button "Parker, CO - Robinson Ranch" [ref=e453] [cursor=pointer]
+                - button "Parker, CO - Stonegate" [ref=e455] [cursor=pointer]
+                - button "Peoria, AZ - Deer Valley" [ref=e457] [cursor=pointer]
+                - button "Pflugerville, TX - Heritage Park" [ref=e459] [cursor=pointer]
+                - button "Phoenix, AZ - Ahwatukee Hills" [ref=e461] [cursor=pointer]
+                - button "Phoenix, AZ - Happy Valley" [ref=e463] [cursor=pointer]
+                - button "Phoenix, AZ - Indian School Rd (Coming Soon!)" [ref=e465] [cursor=pointer]
+                - button "Phoenix, AZ - Paradise Valley" [ref=e467] [cursor=pointer]
+                - button "Phoenix, AZ - Tuscano" [ref=e469] [cursor=pointer]
+                - button "Phoenix, AZ - Union Hills" [ref=e471] [cursor=pointer]
+                - button "Plano, TX - Coit Road" [ref=e473] [cursor=pointer]
+                - button "Plano, TX - Plano West" [ref=e475] [cursor=pointer]
+                - button "Plano, TX - Preston Creek" [ref=e477] [cursor=pointer]
+                - button "Plano, TX - Village Creek" [ref=e479] [cursor=pointer]
+                - button "Prescott Valley, AZ - Glassford Hill" [ref=e481] [cursor=pointer]
+                - button "Prosper, TX - Windsong Ranch" [ref=e483] [cursor=pointer]
+                - button "Pueblo, CO - Country Club" [ref=e485] [cursor=pointer]
+                - button "Pueblo, CO - Regency" [ref=e487] [cursor=pointer]
+                - button "Pueblo, CO - State Fair Grounds" [ref=e489] [cursor=pointer]
+                - button "Queen Creek, AZ - Queen Creek" [ref=e491] [cursor=pointer]
+                - button "Richardson, TX - Richardson Heights" [ref=e493] [cursor=pointer]
+                - button "Roanoke, TX - Parks of Roanoke" [ref=e495] [cursor=pointer]
+                - button "Rockwall, TX - Yellow Jacket" [ref=e497] [cursor=pointer]
+                - button "Round Rock, TX - Cat Hollow" [ref=e499] [cursor=pointer]
+                - button "Rowlett, TX - Rowlett Center" [ref=e501] [cursor=pointer]
+                - button "San Tan Valley, AZ - Johnson Ranch" [ref=e503] [cursor=pointer]
+                - button "San Tan Valley, AZ - Ocotillo Trails" [ref=e505] [cursor=pointer]
+                - button "Scottsdale, AZ - Scottsdale Road" [ref=e507] [cursor=pointer]
+                - button "Superior, CO - Superior Marketplace" [ref=e509] [cursor=pointer]
+                - button "Surprise, AZ - Orchards" [ref=e511] [cursor=pointer]
+                - button "Surprise, AZ - Prasada" [ref=e513] [cursor=pointer]
+                - button "Tempe, AZ - McClintock" [ref=e515] [cursor=pointer]
+                - button "Tempe, AZ - Mitchell Park" [ref=e517] [cursor=pointer]
+                - button "Temple, TX - Temple" [ref=e519] [cursor=pointer]
+                - button "The Colony, TX - Main Street" [ref=e521] [cursor=pointer]
+                - button "Thornton, CO - Northglenn" [ref=e523] [cursor=pointer]
+                - button "Thornton, CO - Riverdale" [ref=e525] [cursor=pointer]
+                - button "Thornton, CO - Thorncreek" [ref=e527] [cursor=pointer]
+                - button "Thornton, CO - Thornton Town Center" [ref=e529] [cursor=pointer]
+                - button "Tyler, TX - Earl Campbell (Coming Soon!)" [ref=e531] [cursor=pointer]
+                - button "Tyler, TX - The Shops at Tyler" [ref=e533] [cursor=pointer]
+                - button "Tyler, TX - Tyler" [ref=e535] [cursor=pointer]
+                - button "Waterloo, IA - Hope Martin" [ref=e537] [cursor=pointer]
+                - button "Weatherford, TX - Weatherford" [ref=e539] [cursor=pointer]
+                - button "West Des Moines, IA - Grand Woods Plaza" [ref=e541] [cursor=pointer]
+                - button "Westminster, CO - Meadow Pointe" [ref=e543] [cursor=pointer]
+                - button "Westminster, CO - Sheridan Blvd" [ref=e545] [cursor=pointer]
+                - button "Westminster, CO - Sheridan Crossing" [ref=e547] [cursor=pointer]
+                - button "Wylie, TX - Westgate" [ref=e549] [cursor=pointer]
+        - iframe [ref=e551]:
+          
+        - generic:
+          - generic:
+            - button "Map camera controls" [ref=e553] [cursor=pointer]
+            - generic [ref=e555] [cursor=pointer]:
+              - button "Zoom in" [ref=e556]
+              - button "Zoom out" [ref=e558]
+        - link "Open this area in Google Maps (opens a new window)" [ref=e560] [cursor=pointer]:
+          - /url: https://maps.google.com/maps?ll=36.522773,-101.542976&z=4&t=m&hl=en-US&gl=US&mapclient=apiv3
+          - img "Google" [ref=e562]
+        - generic [ref=e563]:
+          - button "Keyboard shortcuts" [ref=e569] [cursor=pointer]
+          - generic [ref=e570]: Map data ©2026 Google, INEGI
+          - 'button "Map Scale: 500 km per 55 pixels" [ref=e575] [cursor=pointer]':
+            - generic [ref=e578]: 500 km
+          - link "Terms (opens in new tab)" [ref=e590] [cursor=pointer]:
+            - /url: https://www.google.com/intl/en-US_US/help/terms_maps.html
+            - text: Terms
+    - generic [ref=e592]:
+      - list [ref=e593]:
+        - listitem [ref=e594]:
+          - generic [ref=e595]:
+            - link [ref=e600] [cursor=pointer]:
+              - /url: /stores/ada/ok/0503/
+              - heading "Ada, OK - Ada" [level=3] [ref=e601]
+              - generic [ref=e603]:
+                - paragraph [ref=e604]: 1215 Lonnie Abbott Blvd
+                - paragraph [ref=e605]: Ada, OK 74820
+              - generic [ref=e606]:
+                - paragraph [ref=e608]: "M-F: 8:00 am - 6:00 pm Sat: 8:00 am - 5:00 pm Sun: Closed"
+                - paragraph [ref=e610]: CLOSE
+            - generic [ref=e611]:
+              - link "Schedule Now" [ref=e612] [cursor=pointer]:
+                - /url: /schedule-appointment/?storenum=0503
+              - generic [ref=e613] [cursor=pointer]: Set As My Store
+        - listitem [ref=e614]:
+          - generic [ref=e615]:
+            - link [ref=e620] [cursor=pointer]:
+              - /url: /stores/allen/tx/0312/
+              - heading "Allen, TX - Wetsel" [level=3] [ref=e621]
+              - generic [ref=e623]:
+                - paragraph [ref=e624]: 1711 N Greenville Ave
+                - paragraph [ref=e625]: Allen, TX 75002
+              - generic [ref=e626]:
+                - paragraph [ref=e628]: "M-F: 8:00 am - 6:00 pm Sat: 8:00 am - 5:00 pm Sun: Closed"
+                - paragraph [ref=e630]: CLOSE
+            - generic [ref=e631]:
+              - link "Schedule Now" [ref=e632] [cursor=pointer]:
+                - /url: /schedule-appointment/?storenum=0312
+              - generic [ref=e633] [cursor=pointer]: Set As My Store
+        - listitem [ref=e634]:
+          - generic [ref=e635]:
+            - link [ref=e640] [cursor=pointer]:
+              - /url: /stores/ankeny/ia/0417/
+              - heading "Ankeny, IA - Delaware Square" [level=3] [ref=e641]
+              - generic [ref=e643]:
+                - paragraph [ref=e644]: 1685 SE Delaware Ave
+                - paragraph [ref=e645]: Ankeny, IA 50021
+              - generic [ref=e646]:
+                - paragraph [ref=e648]: "M-F: 8:00 am - 6:00 pm Sat: 8:00 am - 5:00 pm Sun: Closed"
+                - paragraph [ref=e650]: CLOSE
+            - generic [ref=e651]:
+              - link "Schedule Now" [ref=e652] [cursor=pointer]:
+                - /url: /schedule-appointment/?storenum=0417
+              - generic [ref=e653] [cursor=pointer]: Set As My Store
+        - listitem [ref=e654]:
+          - generic [ref=e655]:
+            - link [ref=e660] [cursor=pointer]:
+              - /url: /stores/ankeny/ia/0416/
+              - heading "Ankeny, IA - Oralabor" [level=3] [ref=e661]
+              - generic [ref=e663]:
+                - paragraph [ref=e664]: 615 SE Oralabor Rd
+                - paragraph [ref=e665]: Ankeny, IA 50021
+              - generic [ref=e666]:
+                - paragraph [ref=e668]: "M-F: 8:00 am - 6:00 pm Sat: 8:00 am - 5:00 pm Sun: Closed"
+                - paragraph [ref=e670]: CLOSE
+            - generic [ref=e671]:
+              - link "Schedule Now" [ref=e672] [cursor=pointer]:
+                - /url: /schedule-appointment/?storenum=0416
+              - generic [ref=e673] [cursor=pointer]: Set As My Store
+        - listitem [ref=e674]:
+          - generic [ref=e675]:
+            - link [ref=e680] [cursor=pointer]:
+              - /url: /stores/anna/tx/0334/
+              - heading "Anna, TX - Avery Pointe" [level=3] [ref=e681]
+              - generic [ref=e683]:
+                - paragraph [ref=e684]: 1600 W White St
+                - paragraph [ref=e685]: Anna, TX 75409
+              - generic [ref=e686]:
+                - paragraph [ref=e688]: "M-F: 8:00 am - 6:00 pm Sat: 8:00 am - 5:00 pm Sun: Closed"
+                - paragraph [ref=e690]: CLOSE
+            - generic [ref=e691]:
+              - link "Schedule Now" [ref=e692] [cursor=pointer]:
+                - /url: /schedule-appointment/?storenum=0334
+              - generic [ref=e693] [cursor=pointer]: Set As My Store
+        - listitem [ref=e694]:
+          - generic [ref=e695]:
+            - link [ref=e700] [cursor=pointer]:
+              - /url: /stores/ardmore/ok/0507/
+              - heading "Ardmore, OK - Ardmore" [level=3] [ref=e701]
+              - generic [ref=e703]:
+                - paragraph [ref=e704]: 1325 12th Avenue Northwest
+                - paragraph [ref=e705]: Ardmore, OK 73401
+              - generic [ref=e706]:
+                - paragraph [ref=e708]: "M-F: 8:00 am - 6:00 pm Sat: 8:00 am - 5:00 pm Sun: Closed"
+                - paragraph [ref=e710]: CLOSE
+            - generic [ref=e711]:
+              - link "Schedule Now" [ref=e712] [cursor=pointer]:
+                - /url: /schedule-appointment/?storenum=0507
+              - generic [ref=e713] [cursor=pointer]: Set As My Store
+        - listitem [ref=e714]:
+          - generic [ref=e715]:
+            - link [ref=e720] [cursor=pointer]:
+              - /url: /stores/arlington/tx/0342/
+              - heading "Arlington, TX - Mineral Springs" [level=3] [ref=e721]
+              - generic [ref=e723]:
+                - paragraph [ref=e724]: 6017 S Cooper St
+                - paragraph [ref=e725]: Arlington, TX 76001
+              - generic [ref=e726]:
+                - paragraph [ref=e728]: "M-F: 8:00 am - 6:00 pm Sat: 8:00 am - 5:00 pm Sun: Closed"
+                - paragraph [ref=e730]: CLOSE
+            - generic [ref=e731]:
+              - link "Schedule Now" [ref=e732] [cursor=pointer]:
+                - /url: /schedule-appointment/?storenum=0342
+              - generic [ref=e733] [cursor=pointer]: Set As My Store
+        - listitem [ref=e734]:
+          - generic [ref=e735]:
+            - link [ref=e740] [cursor=pointer]:
+              - /url: /stores/arlington/tx/0345/
+              - heading "Arlington, TX - Riverview Village" [level=3] [ref=e741]
+              - generic [ref=e743]:
+                - paragraph [ref=e744]: 1351 NE Green Oaks Blvd
+                - paragraph [ref=e745]: Arlington, TX 76006
+              - generic [ref=e746]:
+                - paragraph [ref=e748]: "M-F: 8:00 am - 6:00 pm Sat: 8:00 am - 5:00 pm Sun: Closed"
+                - paragraph [ref=e750]: CLOSE
+            - generic [ref=e751]:
+              - link "Schedule Now" [ref=e752] [cursor=pointer]:
+                - /url: /schedule-appointment/?storenum=0345
+              - generic [ref=e753] [cursor=pointer]: Set As My Store
+        - listitem [ref=e754]:
+          - generic [ref=e755]:
+            - link [ref=e760] [cursor=pointer]:
+              - /url: /stores/arlington/tx/0326/
+              - heading "Arlington, TX - South Arlington" [level=3] [ref=e761]
+              - generic [ref=e763]:
+                - paragraph [ref=e764]: 151 Eden Rd
+                - paragraph [ref=e765]: Arlington, TX 76002
+              - generic [ref=e766]:
+                - paragraph [ref=e768]: "M-F: 8:00 am - 6:00 pm Sat: 8:00 am - 5:00 pm Sun: Closed"
+                - paragraph [ref=e770]: CLOSE
+            - generic [ref=e771]:
+              - link "Schedule Now" [ref=e772] [cursor=pointer]:
+                - /url: /schedule-appointment/?storenum=0326
+              - generic [ref=e773] [cursor=pointer]: Set As My Store
+        - listitem [ref=e774]:
+          - generic [ref=e775]:
+            - link [ref=e780] [cursor=pointer]:
+              - /url: /stores/arvada/co/0108/
+              - heading "Arvada, CO - Old Towne Arvada" [level=3] [ref=e781]
+              - generic [ref=e783]:
+                - paragraph [ref=e784]: 5465 Wadsworth Bypass
+                - paragraph [ref=e785]: Arvada, CO 80002
+              - generic [ref=e786]:
+                - paragraph [ref=e788]: "M-F: 8:00 am - 6:00 pm Sat: 8:00 am - 5:00 pm Sun: Closed"
+                - paragraph [ref=e790]: CLOSE
+            - generic [ref=e791]:
+              - link "Schedule Now" [ref=e792] [cursor=pointer]:
+                - /url: /schedule-appointment/?storenum=0108
+              - generic [ref=e793] [cursor=pointer]: Set As My Store
+        - listitem [ref=e794]:
+          - generic [ref=e795]:
+            - link [ref=e800] [cursor=pointer]:
+              - /url: /stores/arvada/co/0151/
+              - heading "Arvada, CO - Whisper Village" [level=3] [ref=e801]
+              - generic [ref=e803]:
+                - paragraph [ref=e804]: 9115 Howell St
+                - paragraph [ref=e805]: Arvada, CO 80007
+              - generic [ref=e806]:
+                - paragraph [ref=e808]: "M-F: 8:00 am - 6:00 pm Sat: 8:00 am - 5:00 pm Sun: Closed"
+                - paragraph [ref=e810]: CLOSE
+            - generic [ref=e811]:
+              - link "Schedule Now" [ref=e812] [cursor=pointer]:
+                - /url: /schedule-appointment/?storenum=0151
+              - generic [ref=e813] [cursor=pointer]: Set As My Store
+        - listitem [ref=e814]:
+          - generic [ref=e815]:
+            - link [ref=e820] [cursor=pointer]:
+              - /url: /stores/aubrey/tx/0310/
+              - heading "Aubrey, TX - Providence" [level=3] [ref=e821]
+              - generic [ref=e823]:
+                - paragraph [ref=e824]: 26585 E University Dr
+                - paragraph [ref=e825]: Aubrey, TX 76227
+              - generic [ref=e826]:
+                - paragraph [ref=e828]: "M-F: 8:00 am - 6:00 pm Sat: 8:00 am - 5:00 pm Sun: Closed"
+                - paragraph [ref=e830]: CLOSE
+            - generic [ref=e831]:
+              - link "Schedule Now" [ref=e832] [cursor=pointer]:
+                - /url: /schedule-appointment/?storenum=0310
+              - generic [ref=e833] [cursor=pointer]: Set As My Store
+      - paragraph [ref=e835] [cursor=pointer]: View More
+    - generic [ref=e836]:
+      - generic [ref=e837]:
+        - paragraph [ref=e838]: Providing Exceptional Service
+        - heading "Brakes Plus" [level=3] [ref=e839]
+      - generic [ref=e841]:
+        - generic [ref=e842]:
+          - heading "Free Brake Check" [level=3] [ref=e844]
+          - paragraph [ref=e845]: Our expert technicians will diagnose any issues to determine whether repairs are necessary to your brake pads, shoes, rotors, or braking system.
+          - link "Learn More" [ref=e846] [cursor=pointer]:
+            - /url: /auto-service/brake-service/
+        - generic [ref=e847]:
+          - heading "Everyday Savings" [level=3] [ref=e849]
+          - paragraph [ref=e850]: Brakes Plus offers a variety of coupons and deals to make help get you the best prices on quality auto care.
+          - link "View Deals" [ref=e851] [cursor=pointer]:
+            - /url: /offers/
+        - generic [ref=e852]:
+          - heading "Full Service Mechanical" [level=3] [ref=e854]
+          - paragraph [ref=e855]: Turn to our trained and trusted technicians for all your vehicle maintenance and repair needs.
+          - link "View Services" [ref=e856] [cursor=pointer]:
+            - /url: /auto-service/
+    - generic [ref=e859]:
+      - heading "Location FAQS" [level=2] [ref=e860]
+      - generic [ref=e861]:
+        - heading [level=2] [ref=e864]:
+          - button "What services besides oil do you do?" [expanded] [ref=e865] [cursor=pointer]
+        - heading [level=2] [ref=e869]:
+          - button "Where can I see current promotions?" [ref=e870] [cursor=pointer]
+        - heading [level=2] [ref=e874]:
+          - button "Should I make a reservation?" [ref=e875] [cursor=pointer]
+        - heading [level=2] [ref=e879]:
+          - button "How do I make a reservation?" [ref=e880] [cursor=pointer]
+  - generic [ref=e882]:
+    - generic [ref=e884]:
+      - generic [ref=e887]:
+        - list:
+          - listitem [ref=e888]:
+            - heading "Repairs" [level=2] [ref=e891]
+          - listitem [ref=e892]:
+            - heading "Maintenance" [level=2] [ref=e895]
+          - listitem [ref=e896]:
+            - heading "Peace of Mind" [level=2] [ref=e899]
+      - generic:
+        - generic [ref=e900]:
+          - heading "Connect with Us!" [level=4] [ref=e902]
+          - list [ref=e904]:
+            - listitem [ref=e905]
+            - listitem [ref=e908]
+            - listitem [ref=e911]
+            - listitem [ref=e914]
+            - listitem [ref=e917]
+        - generic [ref=e922]:
+          - generic [ref=e923]:
+            - heading "OUR COMPANY" [level=3] [ref=e924]
+            - paragraph [ref=e925]:
+              - link "About Us" [ref=e926] [cursor=pointer]:
+                - /url: /about-us/
+            - paragraph [ref=e927]:
+              - link "Contact Us" [ref=e928] [cursor=pointer]:
+                - /url: /contact/
+            - paragraph [ref=e929]:
+              - link "Our Careers" [ref=e930] [cursor=pointer]:
+                - /url: /careers/
+            - paragraph [ref=e931]:
+              - link "Privacy Policy" [ref=e932] [cursor=pointer]:
+                - /url: /privacy/
+            - paragraph [ref=e933]:
+              - link "Terms of Use" [ref=e934] [cursor=pointer]:
+                - /url: /terms-of-use/
+            - button "Your Privacy Choices" [ref=e935] [cursor=pointer]
+            - paragraph [ref=e936]:
+              - link "Sitemap" [ref=e937] [cursor=pointer]:
+                - /url: /sitemap.xml
+            - heading "FIND A STORE" [level=3] [ref=e938]
+            - paragraph [ref=e939]:
+              - link "All Stores" [ref=e940] [cursor=pointer]:
+                - /url: /stores/
+            - paragraph [ref=e941]:
+              - link "Make An Appointment" [ref=e942] [cursor=pointer]:
+                - /url: /schedule-appointment/?s=1
+          - generic [ref=e943]:
+            - heading "WHO WE ARE" [level=3] [ref=e944]
+            - paragraph [ref=e945]:
+              - link "Our Services" [ref=e946] [cursor=pointer]:
+                - /url: /auto-service/
+            - paragraph [ref=e947]:
+              - link "Credit Card" [ref=e948] [cursor=pointer]:
+                - /url: /credit-card/
+            - paragraph [ref=e949]:
+              - link "Service Warranty" [ref=e950] [cursor=pointer]:
+                - /url: /warranty/
+            - paragraph [ref=e951]:
+              - link "Pre-Purchase Inspection" [ref=e952] [cursor=pointer]:
+                - /url: /auto-service/pre-purchase-inspection/
+            - heading "DEALS" [level=3] [ref=e953]
+            - paragraph [ref=e954]:
+              - link "Coupons & Deals" [ref=e955] [cursor=pointer]:
+                - /url: /offers/
+            - paragraph [ref=e956]:
+              - link "Military Discount" [ref=e957] [cursor=pointer]:
+                - /url: /military-discounts/
+            - paragraph [ref=e958]:
+              - link "Memorial Day Discounts" [ref=e959] [cursor=pointer]:
+                - /url: /memorial-day-savings/
+            - paragraph [ref=e960]:
+              - link "Presidents Day Discounts" [ref=e961] [cursor=pointer]:
+                - /url: /presidentsday/
+            - paragraph [ref=e962]:
+              - link "Black Friday Deals" [ref=e963] [cursor=pointer]:
+                - /url: /blackfriday/
+          - generic [ref=e964]:
+            - heading "AUTO SERVICES" [level=3] [ref=e965]
+            - paragraph [ref=e966]:
+              - link "Air Filter Replacement" [ref=e967] [cursor=pointer]:
+                - /url: /auto-service/air-filter/
+            - paragraph [ref=e968]:
+              - link "Wheel Alignment Near Me" [ref=e969] [cursor=pointer]:
+                - /url: /auto-service/alignment/
+            - paragraph [ref=e970]:
+              - link "Battery Replacement" [ref=e971] [cursor=pointer]:
+                - /url: /auto-service/batteries/
+            - paragraph [ref=e972]:
+              - link "Coolant Service Near Me" [ref=e973] [cursor=pointer]:
+                - /url: /auto-service/cooling-system/
+            - paragraph [ref=e974]:
+              - link "Transfer Case Service Near Me" [ref=e975] [cursor=pointer]:
+                - /url: /auto-service/differential-transfer-case/
+            - paragraph [ref=e976]:
+              - link "Fluid Filter Replacement Near Me" [ref=e977] [cursor=pointer]:
+                - /url: /auto-service/fuel-filter/
+            - paragraph [ref=e978]:
+              - link "Fuel System Service Near Me" [ref=e979] [cursor=pointer]:
+                - /url: /auto-service/fuel-system-cleaning/
+            - paragraph [ref=e980]:
+              - link "Headlight Replacement Near Me" [ref=e981] [cursor=pointer]:
+                - /url: /auto-service/headlights/
+            - paragraph [ref=e982]:
+              - link "Shocks and Struts Near Ne" [ref=e983] [cursor=pointer]:
+                - /url: /auto-service/shocks-struts/
+            - paragraph [ref=e984]:
+              - link "Starter Repair Service" [ref=e985] [cursor=pointer]:
+                - /url: /auto-service/starter-alternator/
+            - paragraph [ref=e986]:
+              - link "Steer and Suspension" [ref=e987] [cursor=pointer]:
+                - /url: /auto-service/steering-suspension/
+          - generic [ref=e988]:
+            - heading "MORE AUTO SERVICES" [level=3] [ref=e989]
+            - paragraph [ref=e990]:
+              - link "AC Service Near Me" [ref=e991] [cursor=pointer]:
+                - /url: /auto-service/air-conditioning/
+            - paragraph [ref=e992]:
+              - link "Clutch Repair Near Me" [ref=e993] [cursor=pointer]:
+                - /url: /auto-service/clutch/
+            - paragraph [ref=e994]:
+              - link "CV Joints Repair Near Me" [ref=e995] [cursor=pointer]:
+                - /url: /auto-service/cv-joints-boots-axles/
+            - paragraph [ref=e996]:
+              - link "Car Diagnostic Near Me" [ref=e997] [cursor=pointer]:
+                - /url: /auto-service/car-diagnostic/
+            - paragraph [ref=e998]:
+              - link "Oil Change Near Me" [ref=e999] [cursor=pointer]:
+                - /url: /auto-service/oil-change/
+            - paragraph [ref=e1000]:
+              - link "Power Steering Repair Near Me" [ref=e1001] [cursor=pointer]:
+                - /url: /auto-service/power-steering/
+            - paragraph [ref=e1002]:
+              - link "Car Maintenance" [ref=e1003] [cursor=pointer]:
+                - /url: /auto-service/scheduled-maintenance/
+            - paragraph [ref=e1004]:
+              - link "Tire Rotation Near Me" [ref=e1005] [cursor=pointer]:
+                - /url: /auto-service/tire-rotation/
+            - paragraph [ref=e1006]:
+              - link "Tune Service Near Me" [ref=e1007] [cursor=pointer]:
+                - /url: /auto-service/tune-up/
+            - paragraph [ref=e1008]:
+              - link "Windshield Wiper Replacement Near Me" [ref=e1009] [cursor=pointer]:
+                - /url: /auto-service/windshield-wipers/
+            - paragraph [ref=e1010]:
+              - link "Exhaust Service Near Me" [ref=e1011] [cursor=pointer]:
+                - /url: /auto-service/exhaust-muffler/
+            - paragraph [ref=e1012]:
+              - link "Radiator Service Near Me" [ref=e1013] [cursor=pointer]:
+                - /url: /auto-service/radiator/
+            - paragraph [ref=e1014]:
+              - link "Belt Repair Near Me" [ref=e1015] [cursor=pointer]:
+                - /url: /auto-service/serpentine-belt/
+    - paragraph [ref=e1019]:
+      - text: POWERED BY MAVIS
+      - link "TIRE" [ref=e1020] [cursor=pointer]:
+        - /url: https://www.mavis.com/
+      - text: . © 2026 Brakes Plus. All Rights Reserved.
