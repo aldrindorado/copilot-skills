@@ -22,6 +22,9 @@ or run Lighthouse during development.
 Use Playwright (`playwright-browser_*`) by default for all browser-based
 testing, staging verification, and automated QA.
 
+- Run the smallest applicable existing Playwright spec before supplemental
+  checks. Preserve failures, distinguish root causes from cascade errors, and
+  do not modify tests during validation-only work.
 - Navigate directly to the target URL instead of using global navigation flows.
 - For functional or form validation, use `playwright-browser_run_code_unsafe` to batch
   route setup, navigation, interactions, and waits into one script. Block image,
@@ -43,6 +46,8 @@ testing, staging verification, and automated QA.
 - Prefer `playwright-browser_fill_form` for ordinary field entry. Use
   `playwright-browser_type` only when the scenario needs keyboard events, such
   as per-character autocomplete behavior.
+- Prefer normal user-like Playwright actions. Programmatic DOM events are
+  diagnostic only and do not prove that an interaction is usable.
 - When analytics or `dataLayer` events can precede navigation, attach the event
   listener before the triggering action and capture the result in the same
   script to avoid losing it as the page unloads.
@@ -55,7 +60,8 @@ testing, staging verification, and automated QA.
   documenting a visual failure.
 - Inspect console output only at `warning` or `error` level. Inspect network
   activity only for `4xx` or `5xx` failures, and omit request or response
-  payloads unless diagnosing an error.
+  payloads unless diagnosing an error. Distinguish third-party noise from
+  application failures.
 - If Playwright fails to initialize, report the failure and retry once. Do not
   silently switch tools.
 
@@ -85,6 +91,8 @@ When Chrome DevTools is used:
 
 - Use `adorado@tireweb.com` in every email field when testing form submission.
 - Never submit a production form without the user's explicit approval.
+- When a submission must not reach the server, intercept it before triggering
+  the action and verify both the request and resulting UI state.
 
 ## Authenticated browser sessions
 
@@ -111,4 +119,7 @@ Report browser test outcomes as a compact status block:
 
 `Status: Pass/Fail | Target URL: <URL> | Failing Selectors/Errors: <details or none>`
 
-Do not include step-by-step narration unless it is needed to explain a failure.
+Report PASS, FAIL, or BLOCKED per scenario. Keep automated-test results separate
+from supplemental checks, classify conflicting outcomes explicitly, and list
+coverage limitations. Include detail only when needed to reproduce or explain a
+failure.
