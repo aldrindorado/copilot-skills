@@ -5,6 +5,7 @@ is installed from its own directory and must contain a `SKILL.md` file.
 
 | Skill | Description |
 | --- | --- |
+| `backup-staging-files` | Back up an explicit list of Ezytire staging files to a persisted local directory before deployment, reusing deploy-files-staging SFTP settings and credentials. |
 | `deploy-code-review` | Launch a coordinated, read-only nested code-review session using GPT-5.6 Sol, medium reasoning, and long context. Use when the user asks to delegate, run, or perform a code review in a nested session or reviewer sub-session while carrying forward review context and instructions from the main session. |
 | `dev-testing` | Using a configured Playwright mcp to optimize and speed up the testing process and lower the tokens cost. Consolidated Ezytire developer testing, browser validation, staging verification, form-submission, and test-validation guidance. Invoke for requests involving development testing, validation, browser checks, staging verification, form testing, performance analysis, or Lighthouse.|
 | `pr-with-review` | Create a pull request using the Ezytire title convention. Use when the user asks to create a PR from the current branch. |
