@@ -92,21 +92,39 @@ Use the sibling scripts from the Ezytire repository root:
 8. Run the deployment preview with the chosen directory, the explicit
    `$deploymentPaths` queue, and `-WhatIf`. Do not rebuild between preview and
    upload; the confirmed upload must use the exact staged DLL that was previewed.
-9. Summarize the files selected by the preview, including every staged DLL. Do not upload files based only
-   on a request to preview or inspect the deployment.
-10. Select the confirmation behavior:
+9. After a successful preview, and before asking for confirmation or uploading
+   anything, always present the complete final upload queue in this exact
+   review format:
+
+   ```text
+   Remote root: /EOSB-757
+
+   Upload queue:
+   1. `Tireweb Sites/Web/path/file.ext`
+   2. `Tireweb Sites/Web/path/other.ext`
+   ```
+
+   Use a numbered Markdown list with one complete repository-relative
+   deployment path per item, enclosed in inline code. Normalize displayed
+   paths to `/` separators and sort them deterministically by the complete
+   path. Build this list from the preview's final deployable queue, not from
+   the raw changed-path list, so it includes every staged DLL such as
+   `Tireweb Sites/Web/Bin/Customization.dll` and excludes files skipped by
+   validation. Keep the remote root on its own line outside the numbered list.
+   If the final queue is empty, report `Upload queue: empty` and do not ask for
+   confirmation or deploy.
+10. Select the confirmation behavior only after displaying that final queue:
    - **Standard mode (default):** ask the user for explicit confirmation after
-     previewing the selected files.
-   - **Autopilot mode:** when the user explicitly requests `autopilot`, proceed
-     directly from a successful preview to the real upload. State the selected
-     files and remote root before uploading, but do not ask a second confirmation
-     question.
+     the queue is displayed.
+   - **Autopilot mode:** when the user explicitly requests `autopilot`, display
+     the same queue and remote root, then proceed directly to the real upload.
+     Do not add a confirmation prompt.
 11. Autopilot mode only skips the post-preview confirmation. It never skips:
     - remote directory selection or normalization;
     - the preview; or
     - scope validation.
-12. After confirmation in standard mode, or immediately after preview in
-    autopilot mode, run the same command without `-WhatIf`:
+12. After confirmation in standard mode, or immediately after displaying the
+    queue in autopilot mode, run the same command without `-WhatIf`:
 
     ```powershell
     & "$HOME\.copilot\skills\deploy-files-staging\Deploy-StagingCustom.ps1" `
