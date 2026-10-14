@@ -1,6 +1,6 @@
 ---
 name: website-styling-audit
-description: Audit live websites, recover existing audit folders for reruns or repackaging, and always write a frontend-developer-ready report.html plus supporting local evidence files after an unslop wording pass. Before any audit action or local output, verify the available browser, Python, process, and filesystem capabilities and give installation guidance without installing anything implicitly. The scope is CSS-driven responsive styling, layout, typography, color and contrast, component consistency, UI states, overflow, and accessibility-related styling signals. If explicitly requested, reuse the local bundle for GitHub PR or CI publication. Note scripts or runtime causes only when they directly produce the styling issue.
+description: Audit live websites through a required nested project session, recover existing audit folders for reruns or repackaging, and always write a frontend-developer-ready report.html plus supporting local evidence files after an unslop wording pass. Before any audit action or local output, verify the available browser, Python, process, and filesystem capabilities and give installation guidance without installing anything implicitly. The nested worker uses GPT-5.6 Luna with maximum reasoning and long context. The scope is CSS-driven responsive styling, layout, typography, color and contrast, component consistency, UI states, overflow, and accessibility-related styling signals. If explicitly requested, reuse the local bundle for GitHub PR or CI publication. Note scripts or runtime causes only when they directly produce the styling issue.
 ---
 
 # Website styling audit
@@ -21,13 +21,123 @@ into an audit finding unless it directly causes the reported visual problem.
 When a script is relevant, keep the finding about the styling impact and record
 the script or runtime behavior as a contributing-cause note.
 
+## Delegated execution boundary
+
+Every use of this skill has a parent coordinator and exactly one nested audit
+worker. The parent coordinator must complete the prerequisite preflight and
+resolve the audit inputs before creating the worker. Creating the worker is a
+hard boundary: the parent must not navigate to a target, read baseline
+evidence, inspect local source for findings, exercise UI states, capture
+screenshots, classify findings, or write the audit bundle. Those audit actions
+belong to the nested worker.
+
+Create the worker with `create_session` as a project session in the current
+project. Unless the user explicitly requests a different execution location or
+workspace behavior, omit `project_id` so the current project is inherited and
+omit `workspace_type` so Copilot Desktop can use its isolated project
+workspace. Set `coordinate_with_creator` to `true`, `notify_on_idle` to
+`once`, and use these exact kickoff settings:
+
+```json
+{
+  "session_kind": "project",
+  "coordinate_with_creator": true,
+  "notify_on_idle": "once",
+  "kickoff": {
+    "mode": "autopilot",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "context_tier": "long_context",
+    "prompt": "<standalone audit handoff>"
+  }
+}
+```
+
+`long_context` is the 1.1M context setting. Do not replace any of these values
+with another model, lower reasoning effort, or the default context tier. Do
+not create a second worker or invoke this skill again from the worker.
+
+### Required parent-to-worker kickoff payload
+
+The parent must make the kickoff standalone. It must pass all of the following
+resolved values rather than asking the worker to infer them:
+
+- **Targets and routes:** every deduplicated full URL, route, required page
+  state, optional local project path, and any target-specific access limits.
+- **Scope and coverage:** CSS-first/read-only scope, requested issue categories,
+  exact viewport matrix or the default matrix, required safe UI states, and
+  explicit exclusions or coverage reductions.
+- **Output:** the existing writable output base, sanitized surface label,
+  collision/rerun folder rule, and the expected local bundle path. Use an
+  absolute local path when the host supports it.
+- **Mode and baseline:** `initial`, `rerun`, or `repackage`; the baseline
+  folder and user-requested comparison mode when applicable. The worker must
+  verify the baseline itself before using its evidence.
+- **Prerequisite results:** the complete `PASS`/`BLOCKED`/`PENDING` table,
+  executable paths and versions, Playwright capability and browser
+  initialization results, process-runner result, filesystem writability
+  result, and any optional fallback that was not used.
+- **Safety limits:** no credentials or secrets, no security-warning bypass,
+  no installs, no mutations or submissions, no undocumented commands, and the
+  authentication handoff rule below.
+
+Use this compact structure in the kickoff prompt:
+
+```text
+Task: Perform the delegated website styling audit yourself. Do not create another session or delegate again.
+Targets/routes: <full URLs, routes, states, and optional local project path>
+Scope/coverage: <CSS-first scope, viewports, safe UI states, exclusions>
+Output: <base directory, surface label, collision rule, expected bundle path>
+Mode/baseline: <initial, rerun, or repackage; baseline details>
+Parent preflight: <complete status table, versions, browser/tool and filesystem results>
+Safety limits: <read-only and authentication limits>
+Report to parent: <required completion fields and exact blocked/untested reporting>
+```
+
+The parent must wait for the worker's completion report; an idle notification
+alone is not proof that the audit finished. The worker must report the exact
+bundle and `report.html` paths, run mode, targets and coverage, finding
+summary, blocked or untested checks, authentication limits, and post-write
+validation result. The parent may summarize that report but must not recreate
+or alter the worker's evidence, JSON schemas, or findings.
+
+If nested project-session creation is unavailable, or Copilot Desktop cannot
+provide the exact `gpt-5.6-luna`, `max`, and `long_context` settings, report
+delegation as **Blocked** with the missing capability and practical
+remediation. Do not silently fall back to another model, reduce the settings,
+run the audit in the parent, or claim that a bundle was produced. Users on
+another Copilot Desktop installation should configure a project-backed session,
+enable the required model/context entitlement, and rerun the skill; no external
+service or implicit software installation is required.
+
+### Worker blockers and authentication handoff
+
+If the worker's session-specific preflight finds a missing required capability,
+it must stop before navigation and output, return the exact `BLOCKED` check and
+remediation to the parent, and not substitute another tool or model. If only a
+target is blocked by authentication, an access-control warning, instability,
+or an unavailable route, the worker must preserve that target as
+`Blocked`/`untested` and may finish a bundle for the remaining safe coverage
+only when the output preflight passed.
+
+When a login or MFA boundary appears, the worker must report
+`authenticationRequired` to the parent, navigate no further, and never ask for
+or store the credential. The parent may ask the user to authenticate directly
+in the same browser session. The parent must send only an explicit
+`authenticationReady` or `authenticationUnavailable` result back to the
+worker; it must not forward secrets. The worker resumes only after
+`authenticationReady`. Otherwise it records the exact blocked coverage and
+finishes without claiming that it was checked.
+
 ## First-run prerequisite preflight
 
-Run this gate before asking for missing audit inputs, reading a baseline or
-local project for audit evidence, opening a target, invoking browser
-interactions, creating an output directory, or taking screenshots. Do not
-start an audit or write local output while a required check is `Blocked` or
-`Pending`.
+The parent coordinator runs this gate before asking for missing audit inputs,
+reading a baseline or local project for audit evidence, opening a target,
+invoking browser interactions, creating an output directory, taking
+screenshots, or creating the nested worker. Do not start an audit or write
+local output while a required check is `Blocked` or `Pending`. A successful
+parent preflight authorizes delegation only; it does not authorize the parent
+to perform audit work.
 
 The preflight has two phases:
 
@@ -43,7 +153,10 @@ missing capability and remediation. A successful preflight is not evidence
 that the target is accessible; target access is still recorded separately.
 Copy the final preflight statuses, executable/version details, browser
 initialization result, destination writability result, and any optional
-fallback that was not used into the report's validation notes.
+fallback that was not used into the worker kickoff and the report's validation
+notes. After the parent preflight passes, the worker must re-check
+session-specific capabilities before navigation or output and report any
+changed result.
 
 ### Required capabilities for every run
 
@@ -135,6 +248,12 @@ the read-only safety boundary.
 
 ## Required inputs and scope
 
+The parent coordinator collects and validates the required inputs below before
+creating the worker, then passes the resolved values in the kickoff payload.
+The worker must not invent a URL, route, viewport, state, output path, or
+comparison mode that the parent did not provide or that it cannot recover from
+the verified baseline.
+
 Use the URLs, routes, and constraints already supplied by the user. If a
 required input is missing, ask for one item at a time:
 
@@ -191,6 +310,11 @@ audit. If the audit targets only a remote URL, there is no project-root
 restriction, but the base directory must still exist and be writable.
 
 ## Existing audit folder input and run mode
+
+The nested worker performs the baseline read and run-mode decision after the
+parent passes the folder path in the kickoff. The parent may validate that the
+path exists and is suitable as an input, but must not read its evidence or
+derive findings before delegation.
 
 Accept an existing audit output folder as an input. A valid audit folder has
 `report.html` and `audit-files\findings.json` plus
@@ -298,6 +422,10 @@ CSS viewport dimensions actually checked in the report.
   and observable evidence.
 
 ## Audit workflow
+
+Only the nested audit worker runs this workflow. The parent coordinator must
+not perform any step below as a substitute for creating or waiting on the
+worker.
 
 ### 1. Build the target matrix
 
@@ -996,9 +1124,10 @@ than claiming the site has no styling issues.
 
 ## Output routing and local bundle
 
-Always create and validate a local artifact bundle. It is the only default
-output. `report.html` is the single canonical human-facing report. Markdown is
-not required.
+The nested worker must always create and validate a local artifact bundle. It
+is the only default output. `report.html` is the single canonical
+human-facing report. Markdown is not required. The parent must not create,
+repair, or repackage the bundle itself.
 
 After the base directory and website/surface label are resolved, create this
 destination:
@@ -1332,6 +1461,9 @@ occurred.
 
 ## Tool guidance
 
+The nested worker uses the following tools for the actual audit. The parent
+must not invoke them against an audit target.
+
 - Use Playwright browser tools first:
   `playwright-browser_navigate`, `playwright-browser_run_code_unsafe`,
   `playwright-browser_snapshot`, `playwright-browser_evaluate`,
@@ -1353,6 +1485,11 @@ occurred.
   once, then report the exact blocked coverage.
 
 ## Usage examples
+
+All examples below describe the work handed to the nested audit worker. The
+invoking session must run the prerequisite preflight, create the required
+`gpt-5.6-luna`/`max`/`long_context` project session, and wait for that worker's
+completion report before returning results.
 
 - `Audit https://example.com for CSS styling issues at desktop and mobile widths.`
 - `Audit these routes for responsive layout, typography, contrast, and focus styling: https://example.com/, https://example.com/catalog.`
