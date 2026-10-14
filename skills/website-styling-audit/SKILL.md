@@ -357,16 +357,20 @@ Use this decision table:
 
 | Input and instruction | Action |
 | --- | --- |
-| Existing audit folder + unambiguous live URL(s) + "rerun", "recheck", or "audit again" | Run a fresh read-only live audit using the recovered routes, states, and viewport matrix, then compare it with the baseline. Existing screenshots are not current evidence. |
-| Existing audit folder + explicit "skip audit", "repackage", or equivalent | Do not navigate to the site. Produce a new handoff from the verified baseline evidence and state `runType: repackage`; never claim a rerun occurred. |
+| Existing audit folder + unambiguous live URL(s) + "rerun", "recheck", or "audit again" | Run a fresh read-only live audit using the recovered routes, states, and viewport matrix, then compare it with the baseline and set root `comparisonStatus` to `compared`. Existing screenshots are not current evidence. |
+| Existing audit folder + explicit "skip audit", "repackage", or equivalent | Do not navigate to the site. Produce a new handoff from the verified baseline evidence, state `runType: repackage`, and set root `comparisonStatus` to `not run`; never claim a rerun occurred. |
 | Existing audit folder + rerun requested but no usable live URL | Ask for the live URL, or mark the rendered rerun blocked if the user cannot provide one. Do not infer a local project, server, or route. |
-| Ordinary URL with no existing audit folder | Run a normal initial audit with `runType: initial`. |
+| Ordinary URL with no existing audit folder | Run a normal initial audit with `runType: initial` and root `comparisonStatus` set to `not applicable`. |
 
 For a repackage, preserve the baseline findings and evidence as
 `Baseline only`, copy verified evidence into the new support folder when
 needed for a self-contained handoff, and mark that no current-state
 observation was made. Do not assign `Fixed`, `Still reproduces`, or `Regressed`
 without a fresh live audit.
+
+Use the exact root comparison-status enum everywhere: `not applicable` for an
+initial audit, `compared` for a rerun, and `not run` for a repackage. Keep the
+space-separated spelling exact.
 
 Use the resolved base directory and label to create the local destination
 described in [Output routing and local bundle](#output-routing-and-local-bundle).
@@ -716,13 +720,15 @@ copy. Do not annotate a **Suggestion** as a confirmed defect.
    for example
    `EV-WS-001-01-checkout-390x844-default-annotated.png` and
    `EV-WS-001-02-checkout-390x844-default-original.png`. Normalize route text
-   for filenames and keep the original and annotated files paired. Keep both
-   PNG files unchanged under `audit-files\screenshots\...`; the HTML embedding
-   step creates data URIs without replacing or moving the archived evidence.
+   for filenames and keep the original and annotated files paired. The
+   annotated map item must set `originalEvidenceId` to the evidence ID of its
+   one original pair; keep both PNG files unchanged under
+   `audit-files\screenshots\...`. The HTML embedding step creates data URIs
+   without replacing or moving the archived evidence.
 
 Add an evidence map to the report and local bundle. Every annotated file must
 identify its finding ID, URL/route, viewport/state, selector or visible region,
-and measurement.
+measurement, and `originalEvidenceId` for its paired original file.
 
 ### 6. Classify and prioritize findings
 
@@ -816,7 +822,7 @@ as the content contract:
       </article>
     </section>
 
-    <section id="comparison" data-comparison-status="{not applicable, compared, or not run}">
+    <section id="comparison" data-comparison-status="{not applicable|compared|not run}">
       <h2>Baseline comparison</h2>
       <p>Baseline folder: {path or not applicable}</p>
       <p>Baseline audit ID/timestamp: {values or not applicable}</p>
@@ -856,10 +862,12 @@ as the content contract:
           <p>Expected: {expected result}</p>
           <p>Observed: {observed result}</p>
           <p>CSS/computed-style evidence: {measurements}</p>
-          <p>Evidence IDs: EV-WS-001-01 (annotated), EV-WS-001-02 (original)</p>
+          <p>Evidence IDs: EV-WS-001-01 (annotated; originalEvidenceId:
+            EV-WS-001-02), EV-WS-001-02 (original)</p>
           <figure>
             <img data-audit-image-id="EV-WS-001-01"
                  data-audit-image-kind="annotated"
+                 data-audit-original-evidence-id="EV-WS-001-02"
                  src="__AUDIT_IMAGE__EV-WS-001-01__"
                  alt="Styling Issue - 1 (WS-001), header nav at 390 x 844 in the default state">
             <figcaption>
@@ -887,7 +895,8 @@ as the content contract:
       <h2>Evidence map</h2>
       <p>{Evidence ID, stable finding ID, Styling Issue label,
          occurrence ID, URL/route, viewport/state, selector/region,
-         measurement, and embedded original/annotated evidence}</p>
+         measurement, originalEvidenceId pairing, and embedded
+         original/annotated evidence}</p>
     </section>
 
     <section id="blocked-or-untested">
@@ -937,9 +946,30 @@ explicit tokens, not guessed paths or broad string replacement:
 
 The token ID must resolve to an `original` or `annotated` item in the
 validated current `evidence-map.json`. Every annotated evidence item shown in
-the map must have exactly one annotated token. If an original-image link is
-shown, it must have its own original token and be embedded too. Preserve the
-alt text and finding, occurrence, and evidence IDs.
+the map must have exactly one annotated token and exactly one
+`originalEvidenceId` that resolves to an original item with one original token.
+If an original-image link is shown, it must use that paired original ID and be
+embedded too. Preserve the alt text and finding, occurrence, and evidence IDs.
+
+For example, the two current evidence-map items for the HTML above are paired
+by the annotated item's explicit field:
+
+```json
+[
+  {
+    "evidenceId": "EV-WS-001-01",
+    "kind": "annotated",
+    "originalEvidenceId": "EV-WS-001-02",
+    "file": "audit-files/screenshots/annotated/EV-WS-001-01-checkout-390x844-default-annotated.png"
+  },
+  {
+    "evidenceId": "EV-WS-001-02",
+    "kind": "original",
+    "originalEvidenceId": null,
+    "file": "audit-files/screenshots/original/EV-WS-001-02-checkout-390x844-default-original.png"
+  }
+]
+```
 
 Run a Python 3 step using only the standard library after the technical source
 is complete and before the final bundle validation. The script must:
@@ -984,9 +1014,66 @@ def inside(path, root):
         return False
 
 def png_dimensions(raw, evidence_id):
-    if raw[:8] != b"\x89PNG\r\n\x1a\n" or len(raw) < 24:
+    if raw[:8] != b"\x89PNG\r\n\x1a\n":
         fail(f"{evidence_id} is not a valid PNG")
-    return struct.unpack(">II", raw[16:24])
+
+    offset = 8
+    seen_ihdr = False
+    seen_idat = False
+    idat_closed = False
+    seen_iend = False
+    dimensions = None
+    while offset < len(raw):
+        if len(raw) - offset < 12:
+            fail(f"{evidence_id} has a truncated PNG chunk")
+
+        length = struct.unpack_from(">I", raw, offset)[0]
+        chunk_type = raw[offset + 4:offset + 8]
+        if len(chunk_type) != 4 or not all(
+            65 <= value <= 90 or 97 <= value <= 122 for value in chunk_type
+        ):
+            fail(f"{evidence_id} has an invalid PNG chunk type")
+
+        chunk_end = offset + 12 + length
+        if chunk_end > len(raw):
+            fail(f"{evidence_id} has a truncated PNG chunk payload")
+
+        chunk_data = raw[offset + 8:offset + 8 + length]
+        expected_crc = struct.unpack_from(">I", raw, offset + 8 + length)[0]
+        actual_crc = binascii.crc32(chunk_type + chunk_data) & 0xffffffff
+        if actual_crc != expected_crc:
+            fail(f"{evidence_id} has an invalid PNG chunk CRC")
+
+        if not seen_ihdr and chunk_type != b"IHDR":
+            fail(f"{evidence_id} is missing its first IHDR chunk")
+
+        if chunk_type == b"IHDR":
+            if seen_ihdr or length != 13:
+                fail(f"{evidence_id} has an invalid IHDR chunk")
+            width, height = struct.unpack(">II", chunk_data[:8])
+            if width == 0 or height == 0:
+                fail(f"{evidence_id} has invalid PNG dimensions")
+            dimensions = (width, height)
+            seen_ihdr = True
+        elif chunk_type == b"IDAT":
+            if idat_closed or length == 0:
+                fail(f"{evidence_id} has an invalid IDAT sequence")
+            seen_idat = True
+        elif chunk_type == b"IEND":
+            if not seen_ihdr or not seen_idat or seen_iend or length != 0:
+                fail(f"{evidence_id} has an invalid IEND chunk")
+            seen_iend = True
+            if chunk_end != len(raw):
+                fail(f"{evidence_id} has data after IEND")
+            break
+        elif seen_idat:
+            idat_closed = True
+
+        offset = chunk_end
+
+    if not seen_ihdr or not seen_idat or not seen_iend:
+        fail(f"{evidence_id} is missing a complete IHDR/IDAT/IEND structure")
+    return dimensions
 
 class AttributeReader(HTMLParser):
     def __init__(self):
@@ -1042,6 +1129,25 @@ for item in items:
         "dimensions": (width, height),
     }
 
+for evidence_id, item in by_id.items():
+    kind = item.get("kind")
+    if "originalEvidenceId" not in item:
+        fail(f"{evidence_id} is missing originalEvidenceId")
+    original_id = item["originalEvidenceId"]
+    if kind == "annotated":
+        if not isinstance(original_id, str) or not original_id:
+            fail(f"{evidence_id} must name one originalEvidenceId")
+        original = by_id.get(original_id)
+        if original is None or original.get("kind") != "original":
+            fail(f"{evidence_id} originalEvidenceId does not resolve to original evidence")
+        for field in ("findingId", "occurrenceId", "url", "route", "viewport", "state"):
+            if item.get(field) != original.get(field):
+                fail(f"{evidence_id} pairing does not match original evidence for {field}")
+        if original_id not in embedded:
+            fail(f"{evidence_id} paired original evidence is not embeddable")
+    elif original_id is not None:
+        fail(f"{evidence_id} may not set originalEvidenceId")
+
 source = template.read_text(encoding="utf-8")
 tokens = []
 remaining = source
@@ -1058,8 +1164,12 @@ while TOKEN_PREFIX in remaining:
     tokens.append(evidence_id)
 
 for evidence_id, item in by_id.items():
-    if item.get("kind") == "annotated" and evidence_id not in tokens:
-        fail(f"annotated evidence has no HTML token: {evidence_id}")
+    if item.get("kind") == "annotated":
+        if evidence_id not in tokens:
+            fail(f"annotated evidence has no HTML token: {evidence_id}")
+        original_id = item["originalEvidenceId"]
+        if original_id not in tokens:
+            fail(f"paired original evidence has no HTML token: {original_id}")
 
 rendered = source
 for evidence_id in tokens:
@@ -1082,6 +1192,7 @@ def validate_data_uri(value, evidence_id):
 
 reader = AttributeReader()
 reader.feed(rendered)
+original_link_counts = {}
 for tag, attrs in reader.elements:
     evidence_id = attrs.get("data-audit-image-id")
     if tag == "img":
@@ -1089,19 +1200,35 @@ for tag, attrs in reader.elements:
             fail("img is missing a valid data-audit-image-id")
         if by_id[evidence_id].get("kind") != "annotated":
             fail(f"{evidence_id} is not annotated evidence for an img")
+        if attrs.get("data-audit-original-evidence-id") != by_id[evidence_id].get(
+            "originalEvidenceId"
+        ):
+            fail(f"{evidence_id} has an invalid original evidence pairing")
         validate_data_uri(attrs.get("src", ""), evidence_id)
     if attrs.get("data-audit-image-kind") == "original":
         if evidence_id not in embedded:
             fail("original link is missing a valid data-audit-image-id")
         if by_id[evidence_id].get("kind") != "original":
             fail(f"{evidence_id} is not original evidence for an original link")
+        original_link_counts[evidence_id] = original_link_counts.get(evidence_id, 0) + 1
         validate_data_uri(attrs.get("href", ""), evidence_id)
+
+for evidence_id, item in by_id.items():
+    if (
+        item.get("kind") == "annotated"
+        and original_link_counts.get(item["originalEvidenceId"]) != 1
+    ):
+        fail(
+            f"paired original evidence must have exactly one HTML link: "
+            f"{item['originalEvidenceId']}"
+        )
 
 for evidence_id in tokens:
     if embedded[evidence_id]["uri"] not in rendered:
         fail(f"embedded URI is missing: {evidence_id}")
 
-report.write_text(rendered, encoding="utf-8", newline="\n")
+with report.open("w", encoding="utf-8", newline="\n") as output:
+    output.write(rendered)
 ```
 
 The exact-token checks above are intentional. They prevent a missing evidence
@@ -1202,8 +1329,9 @@ not replace any required path. The validator must:
 2. Parse both JSON files as UTF-8 JSON. Check every required root field listed
    in the machine-readable schema, verify that finding IDs, occurrence IDs,
    and evidence IDs are present and unique, and reject malformed or duplicate
-   IDs. For a `rerun` or `repackage`, also require the baseline metadata,
-   `runType`, `currentAuditTimestamp`, `comparisonStatus`,
+   IDs. Validate the root `comparisonStatus` against exactly `not applicable`,
+   `compared`, or `not run`; for a `rerun` or `repackage`, also require the
+   baseline metadata, `runType`, `currentAuditTimestamp`, `comparisonStatus`,
    `previousFindingId`, previous/current measurements, current evidence IDs,
    finding labels, comparison statuses, and `stateTests`. Confirm each `label`
    matches its stable ID suffix (`WS-001` -> `Styling Issue - 1`) and each
@@ -1215,14 +1343,20 @@ not replace any required path. The validator must:
    URI. Reject relative screenshot paths, `audit-files` image paths, unresolved
    image tokens, and unsupported MIME types. Normal external target links and
    intentionally documented support-file links may remain, but the report must
-   render its images without them.
-4. Resolve every `file`, `originalFile`, and `annotatedFile` in
-   `evidence-map.json` relative to the surface folder. Require each mapped
-   file to exist, each issue evidence item to reference a valid finding and
-   occurrence, each `findingLabel` to match the finding's stable ID/label pair,
-   and each occurrence `evidenceIds` entry to resolve to exactly one map item.
-5. Require every `kind: "annotated"` item to have an existing paired original
-   file. Permit annotated evidence only when its finding classification is
+   render its images without them. Every annotated `img` must also have a
+   `data-audit-original-evidence-id` that matches its map item's
+   `originalEvidenceId`, and that paired original ID must be used by exactly
+   one embedded original-image link.
+4. Resolve every `file` and optional `baselineFile` in `evidence-map.json`
+   relative to the surface folder. Require each mapped file to exist, each
+   issue evidence item to reference a valid finding and occurrence, each
+   `findingLabel` to match the finding's stable ID/label pair, and each
+   occurrence `evidenceIds` entry to resolve to exactly one map item.
+5. Require every `kind: "annotated"` item to include exactly one
+   `originalEvidenceId` that resolves to one `kind: "original"` item. Require
+   the paired items to share `findingId`, `occurrenceId`, `url`, `route`,
+   `viewport`, and `state`, and require both `file` paths to exist. Permit
+   annotated evidence only when its finding classification is
    `Confirmed CSS issue` or `Confirmed styling issue with a contributing cause`.
    Suggestions may link originals or measurement evidence, but must not have
    annotated items or annotated image links.
@@ -1315,10 +1449,11 @@ GitHub PR or CI artifact later.
 
 - root fields `schemaVersion`, `auditId`, `generatedAt`,
   `currentAuditTimestamp`, `runType` (`initial`, `rerun`, or `repackage`),
-  `comparisonStatus`, `baseline` (`auditId`, `path`, and `timestamp` when
-  present), `targets`, `surfaceLabel`, `reportFile` (`report.html`),
-  `supportRoot` (`audit-files`), `viewportMatrix`, `statesChecked`,
-  `stateTests`, `findings`, `blockedOrUntested`, and `validation`;
+  `comparisonStatus` (`not applicable`, `compared`, or `not run`), `baseline`
+  (`auditId`, `path`, and `timestamp` when present), `targets`, `surfaceLabel`,
+  `reportFile` (`report.html`), `supportRoot` (`audit-files`),
+  `viewportMatrix`, `statesChecked`, `stateTests`, `findings`,
+  `blockedOrUntested`, and `validation`;
 - each finding's `id`, `priority`, `classification`, `confidence`, `title`,
   `label` (`Styling Issue - N`), `recommendation`, `comparisonStatus`,
   `developerAction`, `previousFindingId`, `previousFindingLabel`,
@@ -1334,16 +1469,19 @@ GitHub PR or CI artifact later.
 - `validation` fields for authentication/dynamic-content limits,
   instrumentation, browser/tool results, and output routing status.
 
-`evidence-map.json` must contain root fields `schemaVersion`, `auditId`, and
+`evidence-map.json` must contain root fields `schemaVersion`, `auditId`,
 `surfaceLabel`, `reportFile` (`report.html`), `supportRoot` (`audit-files`),
-`runType`, `currentAuditTimestamp`, `baselineAuditId` (or `null`), and
-`items`. Each item must include `evidenceId`, `findingId` (or `null` for a
-baseline), `occurrenceId` (or `null` for a baseline), `kind` (`original`,
-`annotated`, or `measurement`), `file`, `url`, `route`, `viewport`, `state`,
-`selectorOrRegion`, `measurement`, and `capturedAt`. Issue evidence must use a
-valid current occurrence ID. Each non-baseline item must also include
-`findingLabel` (`Styling Issue - N`); baseline items use `null`. A comparison
-item may include
+`runType`, `comparisonStatus` (`not applicable`, `compared`, or `not run`),
+`currentAuditTimestamp`, `baselineAuditId` (or `null`), and `items`. Each item
+must include `evidenceId`, `findingId` (or `null` for a baseline),
+`occurrenceId` (or `null` for a baseline), `kind` (`original`, `annotated`, or
+`measurement`), `file`, `url`, `route`, `viewport`, `state`,
+`selectorOrRegion`, `measurement`, `capturedAt`, and `originalEvidenceId`.
+`originalEvidenceId` is required for an annotated item and must name exactly one
+paired original item; original and measurement items must set it to `null`.
+Issue evidence must use a valid current occurrence ID. Each non-baseline item
+must also include `findingLabel` (`Styling Issue - N`); baseline items use
+`null`. A comparison item may include
 `baselineEvidenceId` and `baselineFile`; only use `baselineFile` when it is a
 valid relative path to a known sibling baseline folder, otherwise set it to
 `null` and keep the baseline reference in the report text. For screenshots,
@@ -1353,11 +1491,14 @@ with `width`, `height`, `devicePixelRatio`, `scaleX`, `scaleY`, and
 HTML report, and any optional Markdown export. The HTML report embeds the
 image bytes; these JSON file paths remain archive/machine-handoff metadata.
 
-Store `file`, `originalFile`, `annotatedFile`, and `baselineFile` paths
-relative to the current output folder, using the `audit-files/` prefix for
-current files. Do not store absolute local paths in link fields. The
-`baseline.path` provenance field may retain the resolved baseline folder path,
-but it is metadata only and must never be used as an HTML link or file path.
+Store each evidence item's `file` and optional `baselineFile` paths relative
+to the current output folder, using the `audit-files/` prefix for current
+files. Do not add separate `originalFile` or `annotatedFile` fields: an
+annotated item uses its `file` for the annotated PNG and its
+`originalEvidenceId` for the paired original item's `file`. Do not store
+absolute local paths in link fields. The `baseline.path` provenance field may
+retain the resolved baseline folder path, but it is metadata only and must
+never be used as an HTML link or file path.
 
 Use a stable mapping:
 
@@ -1392,6 +1533,10 @@ EV-BASE-01-home-1440x900-default-original.png
 ```
 
 Keep the original and annotated files paired. Annotate only confirmed issues.
+Assign each file its own evidence ID, and set the annotated item's
+`originalEvidenceId` to the original file's evidence ID. The pair must share
+the same finding, occurrence, URL/route, viewport, and state; do not infer the
+pair only from filename order or suffixes.
 Use the exact `getBoundingClientRect()` or locator coordinates and the CSS to
 bitmap scaling rules from the screenshot workflow above. Preserve
 `devicePixelRatio`, screenshot dimensions, clip origin, and the resulting
@@ -1456,7 +1601,7 @@ resize a live page, or claim current measurements. Copy verified baseline
 screenshots into the new `audit-files` tree when a self-contained package is
 needed, assign non-colliding current-run evidence IDs, and label every prior
 finding `Baseline only` with developer action `Verify`. Set the comparison
-status to `not-run` and state plainly in the HTML report that no rerun
+status to `not run` and state plainly in the HTML report that no rerun
 occurred.
 
 ## Tool guidance
