@@ -13,3 +13,19 @@ is installed from its own directory and must contain a `SKILL.md` file.
 | `qa-smoke-testing` | Author, execute, and maintain reusable QA smoke-test scenarios for website functionality affected by code changes. Use when QA needs to confirm that existing functionality still works as expected after a deployment or change. Can also convert existing QA steps written on natural speaking language, then the skill will convert it to test script after the inital run. |
 | `staging-deployment` | Safely deploy Ezytire web files to staging through SFTP, including uncommitted changes, committed branch changes, or parent-authorized manifest assets. Use when asked to deploy, upload, or preview changes on staging. |
 | `test-prod-by-pr` | Verify that one or more approved, merged GitHub pull requests have reached their user-specified production websites. Use when asked to test, validate, or confirm production deployments from PRs. |
+| `website-styling-audit` | Audit live websites, recover baselines for reruns or repackaging, and always write a self-contained frontend-developer-ready report.html plus supporting local evidence files for CSS-driven responsive styling, layout, typography, color and contrast, component consistency, UI states, overflow, and accessibility-related styling signals. |
+
+## Website styling audit prerequisites
+
+The skill performs a prerequisite preflight before it navigates, reads audit
+evidence, or writes a bundle. A live audit requires the Playwright MCP browser
+capability set and a working browser runtime. Every run that writes the
+canonical bundle requires Python 3.8 or newer, a local process runner, and an
+existing writable output directory. Repackaging an existing audit bundle does
+not need a browser; source-only runs record rendered checks as blocked.
+
+The skill never installs software or dependencies implicitly. If Python,
+Playwright, its browser runtime, a process runner, or a writable destination
+is missing, it reports the exact blocker and gives installation or remediation
+guidance before stopping. See the skill's `First-run prerequisite preflight`
+section for the checks and supported fallback boundaries.
