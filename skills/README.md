@@ -14,18 +14,21 @@ is installed from its own directory and must contain a `SKILL.md` file.
 | `qa-smoke-testing` | Author, execute, and maintain reusable QA smoke-test scenarios for website functionality affected by code changes. Use when QA needs to confirm that existing functionality still works as expected after a deployment or change. Can also convert existing QA steps written on natural speaking language, then the skill will convert it to test script after the inital run. |
 | `staging-deployment` | Safely deploy Ezytire web files to staging through SFTP, including uncommitted changes, committed branch changes, or parent-authorized manifest assets. Use when asked to deploy, upload, or preview changes on staging. |
 | `test-prod-by-pr` | Verify that one or more approved, merged GitHub pull requests have reached their user-specified production websites. Use when asked to test, validate, or confirm production deployments from PRs. |
-| `website-styling-audit` | Delegate every audit, rerun, or repackage to a nested project session using GPT-5.6 Luna with maximum reasoning and long context, then write a self-contained frontend-developer-ready report.html plus supporting local evidence files for CSS-driven responsive styling, layout, typography, color and contrast, component consistency, UI states, overflow, and accessibility-related styling signals. |
+| `website-styling-audit` | Delegate every audit, rerun, or repackage to one nested local chat worker using GPT-5.6 Luna with maximum reasoning and long context, then write a self-contained frontend-developer-ready report.html plus supporting local evidence files for CSS-driven responsive styling, layout, typography, color and contrast, component consistency, UI states, overflow, and accessibility-related styling signals. |
 
 ## Website styling audit prerequisites
 
 The parent session performs a prerequisite preflight before it creates the
-nested worker or allows navigation, baseline reads, or bundle output. The
-worker must be a project session configured with model `gpt-5.6-luna`,
-reasoning effort `max`, and context tier `long_context` (the 1.1M context
-setting). The parent passes the target URLs/routes, CSS scope, viewport/state
-requirements, output base and label, baseline/rerun mode, preflight results,
-safety limits, and expected local bundle path in the kickoff prompt. The
-worker performs the audit itself and must not create another audit session.
+nested worker or allows navigation, full baseline-evidence reads, or bundle
+output. During preflight the parent may read only the canonical root metadata
+allowed by the skill contract for folder-only mode recovery. The worker must
+be a nested local chat child configured with model `gpt-5.6-luna`, reasoning
+effort `max`, and context tier `long_context` (the 1.1M context setting). It
+does not need a project, branch, worktree, or repository checkout. The parent
+passes the target URLs/routes, CSS scope, viewport/state requirements, output
+base and label, baseline/rerun mode, preflight results, safety limits, and
+expected local bundle path in the kickoff prompt. The worker performs the
+audit itself and must not create another audit session.
 
 A live audit requires the Playwright MCP browser capability set and a working
 browser runtime. Every run that writes the canonical bundle requires Python
@@ -38,6 +41,7 @@ Playwright, its browser runtime, a process runner, or a writable destination
 is missing, it reports the exact blocker and gives installation or remediation
 guidance before stopping. If nested-session creation or the exact requested
 model/context settings are unavailable, it reports delegation as blocked and
-does not silently use another model or execute directly. See the skill's
-`Delegated execution boundary` and `First-run prerequisite preflight` sections
-for the handoff, authentication, and supported fallback boundaries.
+does not silently use another model, create a project session, or execute
+directly. See the skill's `Delegated execution boundary` and `First-run
+prerequisite preflight` sections for the handoff, authentication, and supported
+fallback boundaries.

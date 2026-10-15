@@ -25,17 +25,18 @@ npx skills add aldrindorado/copilot-skills@website-styling-audit -g -y
 ```
 
 `@website-styling-audit` installs only `skills/website-styling-audit`. Every
-audit, rerun, or repackage is delegated to a nested project session; the
-invoking session performs only the prerequisite preflight and kickoff handoff.
-The worker must use `gpt-5.6-luna` with `max` reasoning and `long_context`
-(the 1.1M context setting). Live audits require a working Playwright MCP
-browser capability and Python 3.8 or newer for the standard-library report
-embedding and validation steps. The skill checks these requirements before
-navigation or local output and never installs them implicitly. Repackaging an
-existing audit bundle without navigation does not require a browser, but it
-still uses the nested worker. If nested-session creation or any requested
-worker setting is unavailable, the skill reports the limitation and does not
-fall back to direct execution.
+audit, rerun, or repackage is delegated to one nested local chat worker with no
+project or repository checkout. The invoking session performs only the
+prerequisite preflight and kickoff handoff. The worker must use
+`gpt-5.6-luna` with `max` reasoning and `long_context` (the 1.1M context
+setting). Live audits require a working Playwright MCP browser capability and
+Python 3.8 or newer for the standard-library report embedding and validation
+steps. The skill checks these requirements before navigation or local output
+and never installs them implicitly. Repackaging an existing audit bundle
+without navigation does not require a browser, but it still uses the nested
+chat worker. If nested-chat creation or any requested worker setting is
+unavailable, the skill reports the limitation and does not fall back to a
+project session or direct execution.
 
 ### Install all published skills
 

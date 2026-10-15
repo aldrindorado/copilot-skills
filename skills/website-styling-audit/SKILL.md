@@ -1,6 +1,6 @@
 ---
 name: website-styling-audit
-description: Audit live websites through a required nested project session, recover existing audit folders for reruns or repackaging, and always write a frontend-developer-ready report.html plus supporting local evidence files after an unslop wording pass. Before any audit action or local output, verify the available browser, Python, process, and filesystem capabilities and give installation guidance without installing anything implicitly. The nested worker uses GPT-5.6 Luna with maximum reasoning and long context. The scope is CSS-driven responsive styling, layout, typography, color and contrast, component consistency, UI states, overflow, and accessibility-related styling signals. If explicitly requested, reuse the local bundle for GitHub PR or CI publication. Note scripts or runtime causes only when they directly produce the styling issue.
+description: Audit live websites through a required nested local chat worker, recover existing audit folders for reruns or repackaging, and always write a frontend-developer-ready report.html plus supporting local evidence files after an unslop wording pass. Before any audit action or local output, verify the available browser, Python, process, and filesystem capabilities and give installation guidance without installing anything implicitly. The nested worker uses GPT-5.6 Luna with maximum reasoning and long context. The scope is CSS-driven responsive styling, layout, typography, color and contrast, component consistency, UI states, overflow, and accessibility-related styling signals. If explicitly requested, reuse the local bundle for GitHub PR or CI publication. Note scripts or runtime causes only when they directly produce the styling issue.
 ---
 
 # Website styling audit
@@ -31,16 +31,15 @@ evidence, inspect local source for findings, exercise UI states, capture
 screenshots, classify findings, or write the audit bundle. Those audit actions
 belong to the nested worker.
 
-Create the worker with `create_session` as a project session in the current
-project. Unless the user explicitly requests a different execution location or
-workspace behavior, omit `project_id` so the current project is inherited and
-omit `workspace_type` so Copilot Desktop can use its isolated project
-workspace. Set `coordinate_with_creator` to `true`, `notify_on_idle` to
-`once`, and use these exact kickoff settings:
+Create the worker with `create_session` as a local chat child without a project
+or repository checkout. Set `session_kind` to `chat`,
+`coordinate_with_creator` to `true`, and `notify_on_idle` to `once`. Omit
+`project_id`, `base_branch`, and `workspace_type`; the worker does not need a
+default, fake, or inherited project. Use these exact kickoff settings:
 
 ```json
 {
-  "session_kind": "project",
+  "session_kind": "chat",
   "coordinate_with_creator": true,
   "notify_on_idle": "once",
   "kickoff": {
@@ -56,6 +55,18 @@ workspace. Set `coordinate_with_creator` to `true`, `notify_on_idle` to
 `long_context` is the 1.1M context setting. Do not replace any of these values
 with another model, lower reasoning effort, or the default context tier. Do
 not create a second worker or invoke this skill again from the worker.
+
+Immediately inspect the returned child metadata. The expected worker
+`session_type` is `general_chat`, and its `parent_session_id` must identify the
+invoking parent so the chat remains nested. Require local execution and verify
+the requested model, reasoning effort, context tier, and kickoff mode wherever
+the returned metadata exposes those fields. Then verify that the child can
+access the installed skill contract path, local filesystem/process tools, and
+the mode-specific browser capabilities from the parent preflight. A chat child
+does not need a branch, worktree, repository checkout, or project ID. Do not
+reject it because those fields are absent. Block before navigation or output
+only when it is not the expected nested local chat, an exposed required
+setting differs, or a required tool capability is unavailable.
 
 ### Required parent-to-worker kickoff payload
 
@@ -74,7 +85,9 @@ resolved values rather than asking the worker to infer them:
   explicit exclusions or coverage reductions.
 - **Output:** the existing writable output base, sanitized surface label,
   collision/rerun folder rule, and the expected local bundle path. Use an
-  absolute local path when the host supports it.
+  absolute local path when the host supports it. The worker may write only
+  within this user-approved audit destination; it must not write to a
+  repository checkout or any unrelated local path.
 - **Mode and baseline:** `initial`, `rerun`, or `repackage`; the baseline
   folder, any metadata-only values recovered by the parent, and the
   user-requested comparison mode when applicable. The worker must reread and
@@ -119,14 +132,16 @@ summary, blocked or untested checks, authentication limits, and post-write
 validation result. The parent may summarize that report but must not recreate
 or alter the worker's evidence, JSON schemas, or findings.
 
-If nested project-session creation is unavailable, or Copilot Desktop cannot
-provide the exact `gpt-5.6-luna`, `max`, and `long_context` settings, report
-delegation as **Blocked** with the missing capability and practical
-remediation. Do not silently fall back to another model, reduce the settings,
-run the audit in the parent, or claim that a bundle was produced. Users on
-another Copilot Desktop installation should configure a project-backed session,
-enable the required model/context entitlement, and rerun the skill; no external
-service or implicit software installation is required.
+If nested local-chat creation is unavailable, the returned worker is not a
+`general_chat` child of the invoking parent, or Copilot Desktop cannot provide
+the exact `gpt-5.6-luna`, `max`, and `long_context` settings, report delegation
+as **Blocked** with the missing capability and practical remediation. Do not
+silently fall back to another model, reduce the settings, create a project
+session, run the audit in the parent, or claim that a bundle was produced.
+Users on another Copilot Desktop installation should enable nested local chat
+sessions and the required model/context entitlement, then rerun the skill; no
+repository project, external service, or implicit software installation is
+required.
 
 ### Worker blockers and authentication handoff
 
@@ -1757,8 +1772,9 @@ must not invoke them against an audit target.
 
 All examples below describe the work handed to the nested audit worker. The
 invoking session must run the prerequisite preflight, create the required
-`gpt-5.6-luna`/`max`/`long_context` project session, and wait for that worker's
-completion report before returning results.
+`gpt-5.6-luna`/`max`/`long_context` local chat child, verify that it is the
+nested `general_chat` worker, and wait for that worker's completion report
+before returning results.
 
 - `Audit https://example.com for CSS styling issues at desktop and mobile widths.`
 - `Audit these routes for responsive layout, typography, contrast, and focus styling: https://example.com/, https://example.com/catalog.`
