@@ -864,147 +864,366 @@ JSON to understand or fix the findings. Render all of the content below into
 machine-readable handoff files.
 
 Write `report.html` as a valid, self-contained HTML document. Do not put a
-Markdown heading, table, or image syntax in the HTML file. Use this structure
-as the content contract:
+Markdown heading, table, or image syntax in the HTML file. Treat the supplied
+or attached reference report as a visual template only. Reuse its presentation
+language, not its literal findings, target, screenshots, or prose. Generated
+text, rows, cards, IDs, measurements, and evidence remain data-driven for the
+current audit.
+
+Use this richer structure as the canonical presentation and content contract:
 
 ```html
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Website styling audit: {surface label}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{surface label} | Website styling audit {run type}</title>
+  <style>
+    :root {
+      color: #1f2933;
+      background: #f4f6f8;
+      font-family: Arial, sans-serif;
+      line-height: 1.5;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 32px 20px 64px;
+    }
+    h1, h2, h3, h4 { line-height: 1.2; }
+    h1 { margin: 0 0 6px; font-size: 32px; }
+    h2 { margin: 34px 0 14px; font-size: 24px; }
+    h3 { margin: 0 0 10px; }
+    p { margin: 10px 0; }
+    a { color: #075985; }
+    code {
+      background: #e8edf2;
+      border-radius: 4px;
+      padding: 1px 4px;
+      font-family: Consolas, monospace;
+      font-size: .92em;
+    }
+    .meta, .handoff, .finding-card, .comparison-card, .suggestion-card,
+    .support {
+      background: #fff;
+      border: 1px solid #d7dde4;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 18px;
+    }
+    .handoff { background: #fff8e6; border-color: #e2c66d; }
+    .meta p { margin: 5px 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      margin-top: 14px;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid #d7dde4;
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #edf1f5; }
+    .priority, .status {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .priority.p0, .priority.p1 { background: #fee2e2; color: #991b1b; }
+    .priority.p2 { background: #fef3c7; color: #92400e; }
+    .priority.p3 { background: #dbeafe; color: #1e40af; }
+    .status { background: #e8edf2; color: #334e68; }
+    .pass { color: #166534; font-weight: 700; }
+    .blocked { color: #92400e; font-weight: 700; }
+    .finding-card { border-left: 5px solid #dc2626; }
+    .comparison-card { border-left: 5px solid #2563eb; }
+    .suggestion-card { border-left: 5px solid #64748b; }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin: 14px 0;
+    }
+    .detail {
+      background: #f7f9fb;
+      border: 1px solid #e2e7ec;
+      border-radius: 7px;
+      padding: 12px;
+      min-width: 0;
+    }
+    .detail strong { display: block; margin-bottom: 4px; }
+    .evidence {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+    figure {
+      margin: 0;
+      padding: 10px;
+      border: 1px solid #d7dde4;
+      border-radius: 8px;
+      background: #fafbfc;
+      min-width: 0;
+    }
+    figure img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 5px;
+      background: #202124;
+    }
+    figcaption { font-size: 13px; margin-top: 8px; }
+    .small { color: #52606d; font-size: 14px; }
+    footer { color: #52606d; font-size: 13px; margin-top: 34px; }
+    @media (max-width: 700px) {
+      main { padding: 20px 12px 44px; }
+      .table-wrap { overflow-x: auto; }
+      table { min-width: 680px; }
+      .detail-grid, .evidence { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body>
   <main class="audit-report" data-audit-id="{auditId}">
     <header>
-      <h1>Website styling audit</h1>
-      <p>Surface: {surface label}</p>
-      <p>Audit ID: {auditId}</p>
-      <p>Run type: {initial, rerun, or repackage}</p>
-      <p>Audit timestamp: {ISO 8601 timestamp}</p>
+      <h1>{surface label}</h1>
+      <p class="small">Website styling audit {initial, rerun, or repackage}
+        with {coverage summary}</p>
     </header>
 
-    <section id="summary">
+    <section id="summary" class="handoff">
       <h2>Summary</h2>
       <p>{overall result and highest-impact pattern}</p>
+      <p>This report is self-contained for visual evidence. Embedded screenshots
+        travel with this HTML file; JSON maps and unchanged PNGs remain in the
+        optional <code>audit-files</code> bundle.</p>
+    </section>
+
+    <section id="audit-metadata" class="meta">
+      <h2>Audit details</h2>
+      <p><strong>Audit ID:</strong> <code>{auditId}</code></p>
+      <p><strong>Run type:</strong> {initial, rerun, or repackage}</p>
+      <p><strong>Audit timestamp:</strong> <code>{ISO 8601 timestamp}</code></p>
+      <p><strong>Targets and routes:</strong> {linked URLs and routes}</p>
+      <p><strong>CSS viewports:</strong> {exact width x height matrix}</p>
+      <p><strong>States exercised:</strong> {states}</p>
+      <p><strong>Method:</strong> {read-only tools, measurements, screenshots,
+        safe state transitions, and restoration}</p>
     </section>
 
     <section id="coverage">
       <h2>Coverage</h2>
-      <p>Targets and routes: {URLs/routes}</p>
-      <p>CSS viewports checked: {exact width x height matrix}</p>
-      <p>States checked: {states}</p>
-      <p>Coverage limits: {none or exact reduction and reason}</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Target/route</th><th>Viewports</th><th>States</th>
+              <th>Result or limit</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>{URL and route}</td><td>{exact viewports}</td>
+              <td>{states checked}</td>
+              <td>{coverage result or exact reduction and reason}</td></tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <section id="state-tests">
       <h2>State tests</h2>
-      <article data-state-test="hover">
-        <h3>Hover</h3>
-        <p>Target URL/route: {URL and route}</p>
-        <p>Viewport: {width x height}</p>
-        <p>Initial state: default</p>
-        <p>Trigger: {locator or visible region and pointer action}</p>
-        <p>Resulting state: hover</p>
-        <p>Selectors/regions: {target and affected region}</p>
-        <p>Measurements: {default-vs-state computed styles and geometry}</p>
-        <p>Evidence IDs: {state-specific IDs}</p>
-        <p>Restoration: {restored or exact limitation}</p>
-        <p>Audit outcome: {Pass, confirmed issue, Suggestion, Blocked, or untested}</p>
-      </article>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Scenario</th><th>Target/viewport</th>
+              <th>Trigger and resulting state</th><th>Measurements/evidence</th>
+              <th>Restoration and outcome</th></tr>
+          </thead>
+          <tbody>
+            <tr data-state-test="hover">
+              <td><strong>{state}</strong><br><span class="small">
+                Initial: {initial state}</span></td>
+              <td>{URL/route}<br>{width x height}</td>
+              <td>{trigger and locator/region}<br>{resulting state}</td>
+              <td>{default-vs-state computed styles and geometry}<br>
+                Evidence: {state-specific IDs}</td>
+              <td>{restoration}<br>
+                <span class="pass">{Pass, confirmed issue,
+                  Suggestion, Blocked, or untested}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <section id="comparison" data-comparison-status="{not applicable|compared|not run}">
       <h2>Baseline comparison</h2>
-      <p>Baseline folder: {path or not applicable}</p>
-      <p>Baseline audit ID/timestamp: {values or not applicable}</p>
-      <p>Current audit timestamp: {value}</p>
-      <p>Coverage changes: {recovered coverage and exact scope changes}</p>
-      <article id="WS-001-comparison" data-finding-id="WS-001"
+      <div class="meta">
+        <p><strong>Status:</strong> <span class="status">
+          {not applicable, compared, or not run}</span></p>
+        <p><strong>Baseline folder:</strong> {path or not applicable}</p>
+        <p><strong>Baseline audit ID/timestamp:</strong>
+          {values or not applicable}</p>
+        <p><strong>Current audit timestamp:</strong> {value}</p>
+        <p><strong>Coverage changes:</strong>
+          {recovered coverage and exact scope changes}</p>
+      </div>
+      <article id="WS-001-comparison" class="comparison-card"
+               data-finding-id="WS-001"
                data-finding-label="Styling Issue - 1">
         <h3>Styling Issue - 1: {title}</h3>
-        <p>Stable finding ID: WS-001</p>
-        <p>Status: {Fixed, Still reproduces, Regressed, Not verified, or Baseline only}</p>
-        <p>Developer action: {Fix, Verify, or Leave alone}</p>
-        <p>Previous measurements/evidence: {values and embedded baseline images when shown}</p>
-        <p>Current measurements/evidence: {values and embedded current images}</p>
+        <p class="small"><strong>Stable ID:</strong> <code>WS-001</code>
+          &nbsp; <strong>Status:</strong> <span class="status">
+          {Fixed, Still reproduces, Regressed, Not verified, or Baseline only}
+          </span></p>
+        <div class="detail-grid">
+          <div class="detail"><strong>Developer action</strong>
+            {Fix, Verify, or Leave alone}</div>
+          <div class="detail"><strong>Previous measurements/evidence</strong>
+            {values and embedded baseline images when shown}</div>
+          <div class="detail"><strong>Current measurements/evidence</strong>
+            {values and embedded current images}</div>
+        </div>
       </article>
       <p>New findings: {Styling Issue labels with stable IDs, or none}</p>
     </section>
 
     <section id="findings">
       <h2>Findings</h2>
-      <article id="WS-001" data-finding-id="WS-001"
+      <article id="WS-001" class="finding-card" data-finding-id="WS-001"
                data-finding-label="Styling Issue - 1" data-priority="P1"
                data-classification="Confirmed CSS issue">
-        <h3>Styling Issue - 1: {concise title}</h3>
-        <p>Stable finding ID: WS-001</p>
-        <p>Priority: P1</p>
-        <p>Classification: Confirmed CSS issue</p>
-        <p>Confidence: {confidence}</p>
-        <p>Recommendation: {fix guidance}</p>
+        <h3>Styling Issue - 1. {concise title}</h3>
+        <p class="small"><strong>Stable ID:</strong> <code>WS-001</code>
+          &nbsp; <strong>Priority:</strong>
+          <span class="priority p1">P1</span>
+          &nbsp; <strong>Classification:</strong> Confirmed CSS issue
+          &nbsp; <strong>Confidence:</strong> {confidence}</p>
 
         <section id="WS-001-O01" data-finding-id="WS-001" class="finding-occurrence">
           <h4>Occurrence for Styling Issue - 1</h4>
-          <p>Stable occurrence ID: WS-001-O01</p>
-          <p>URL/route: {URL and route}</p>
-          <p>Viewport/state: {width x height and state}</p>
-          <p>Trigger: {user action and locator/region}</p>
-          <p>Selector/region: {selector or visible region}</p>
-          <p>Expected: {expected result}</p>
-          <p>Observed: {observed result}</p>
-          <p>CSS/computed-style evidence: {measurements}</p>
-          <p>Evidence IDs: EV-WS-001-01 (annotated; originalEvidenceId:
-            EV-WS-001-02), EV-WS-001-02 (original)</p>
-          <figure>
-            <img data-audit-image-id="EV-WS-001-01"
-                 data-audit-image-kind="annotated"
-                 data-audit-original-evidence-id="EV-WS-001-02"
-                 src="__AUDIT_IMAGE__EV-WS-001-01__"
-                 alt="Styling Issue - 1 (WS-001), header nav at 390 x 844 in the default state">
-            <figcaption>
-              Annotated evidence.
-              <a data-audit-image-id="EV-WS-001-02"
-                 data-audit-image-kind="original"
-                 href="__AUDIT_IMAGE__EV-WS-001-02__">Open original</a>
-            </figcaption>
-          </figure>
+          <p class="small"><strong>Stable occurrence ID:</strong>
+            <code>WS-001-O01</code> &nbsp; <strong>URL/route:</strong>
+            {URL and route} &nbsp; <strong>Viewport/state:</strong>
+            {width x height and state}</p>
+          <div class="detail-grid">
+            <div class="detail"><strong>Trigger</strong>
+              {user action and locator/region}</div>
+            <div class="detail"><strong>Selector/region</strong>
+              {selector or visible region}</div>
+            <div class="detail"><strong>Expected</strong>{expected result}</div>
+            <div class="detail"><strong>Observed</strong>{observed result}</div>
+            <div class="detail"><strong>CSS/computed-style evidence</strong>
+              {measurements}</div>
+            <div class="detail"><strong>Recommendation</strong>
+              {fix guidance}</div>
+          </div>
+          <div class="evidence">
+            <figure>
+              <img data-audit-image-id="EV-WS-001-01"
+                   data-audit-image-kind="annotated"
+                   data-audit-original-evidence-id="EV-WS-001-02"
+                   src="__AUDIT_IMAGE__EV-WS-001-01__"
+                   alt="Styling Issue - 1 (WS-001), affected region at 390 x 844 in the default state">
+              <figcaption>
+                <strong>Styling Issue - 1</strong> (<code>WS-001</code>),
+                <code>EV-WS-001-01</code>, annotated evidence.
+                <a data-audit-image-id="EV-WS-001-02"
+                   data-audit-image-kind="original"
+                   href="__AUDIT_IMAGE__EV-WS-001-02__">Open original</a>
+              </figcaption>
+            </figure>
+          </div>
         </section>
       </article>
+      <p class="meta">{When there are no findings: No confirmed CSS styling
+        issues in the checked coverage. Do not render a placeholder finding
+        card.}</p>
     </section>
 
     <section id="contributing-causes">
       <h2>Contributing causes</h2>
-      <p>{Only scripts, assets, or runtime behavior that directly cause a styling issue}</p>
+      <div class="meta"><p>{Only scripts, assets, or runtime behavior that
+        directly cause a styling issue, or none}</p></div>
     </section>
 
     <section id="suggestions">
       <h2>Suggestions</h2>
-      <p>{Subjective improvements. Do not create annotated defect images for these}</p>
+      <article class="suggestion-card">
+        <h3>{Suggestion title or "No suggestions"}</h3>
+        <p>{Subjective improvement and rationale. Do not create annotated
+          defect images for suggestions.}</p>
+      </article>
     </section>
 
     <section id="evidence-map">
       <h2>Evidence map</h2>
-      <p>{Evidence ID, stable finding ID, Styling Issue label,
-         occurrence ID, URL/route, viewport/state, selector/region,
-         measurement, originalEvidenceId pairing, and embedded
-         original/annotated evidence}</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Evidence ID</th><th>Finding/occurrence</th>
+              <th>Target/viewport/state</th><th>Region/measurement</th>
+              <th>Pairing</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>{evidence ID}</td><td>{stable finding ID, friendly label,
+              and occurrence ID}</td><td>{URL/route, viewport, and state}</td>
+              <td>{selector/region and measurement}</td>
+              <td>{kind and originalEvidenceId pairing}</td></tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <section id="blocked-or-untested">
       <h2>Blocked or untested</h2>
-      <p>{Target, check, and exact blocker or limitation}</p>
+      <div class="meta"><p><span class="blocked">{Blocked or untested}</span>
+        {Target, check, and exact blocker or limitation, or none}</p></div>
     </section>
 
     <section id="validation">
       <h2>Validation notes</h2>
-      <p>{Authentication, dynamic content, instrumentation, browser/tool
-         outcomes, and post-write bundle validation}</p>
+      <div class="meta"><ul>
+        <li>{Authentication and mutation-safety result}</li>
+        <li>{Dynamic-content and instrumentation limits}</li>
+        <li>{Browser/tool outcomes and blocked checks}</li>
+        <li>{Post-write bundle validation result}</li>
+      </ul></div>
     </section>
+
+    <section class="support">
+      <h2>Optional bundle files</h2>
+      <p>Support links require the accompanying bundle and are not needed to
+        render this report or its embedded images.</p>
+      <ul>
+        <li><a href="audit-files/findings.json">findings.json</a></li>
+        <li><a href="audit-files/evidence-map.json">evidence-map.json</a></li>
+      </ul>
+    </section>
+
+    <footer>Generated from a read-only website styling audit. Visual evidence
+      in this HTML file is self-contained.</footer>
   </main>
 </body>
 </html>
 ```
+
+Repeat rows, cards, occurrence sections, and figures for the actual data. The
+example shows one item only to define structure. It must scale to zero or many
+findings, occurrences, state tests, targets, comparison items, suggestions,
+and evidence images. Use the exact friendly finding label as the visible card
+heading, the priority pill for `P0` through `P3`, `.pass` and `.blocked` for
+outcome emphasis, `.meta` for audit and validation facts, `.detail-grid` for
+fix-ready fields, and `.evidence` for responsive figure collections. Keep
+tables inside `.table-wrap` so narrow screens scroll the table rather than the
+whole report. Never hide required data only to preserve the visual layout.
 
 If a Markdown export is explicitly requested, write it as the optional
 `report.md` beside `report.html`. It is not the canonical output and must not
@@ -1514,6 +1733,14 @@ not replace any required path. The validator must:
    PNG dimensions with `measurement.screenshot.width` and
    `measurement.screenshot.height` in `evidence-map.json`. Confirm that no
    `__AUDIT_IMAGE__...__` token remains anywhere in the final HTML.
+10. Verify the presentation contract remains intact: one inline `<style>`
+    block and no external stylesheet, font, or script; viewport metadata; an
+    `.audit-report` main element; `.handoff` summary; `.meta` audit facts;
+    `.table-wrap` coverage/state/evidence tables; priority/status pills;
+    finding/comparison/suggestion cards; `.detail-grid`; `.evidence` figures;
+    `.pass` and `.blocked` outcomes; responsive media rules; `.support`; and a
+    footer. Confirm every required semantic section and machine/data attribute
+    still exists after presentation rendering.
 
 If any check fails, report the exact file, field, path, or ID that failed and
 the reason. Do not claim the audit bundle is complete until the failure is
@@ -1530,6 +1757,12 @@ JSON or rewrite selectors, numeric measurements, IDs, URLs, or filenames.
 
 `report.html` must contain:
 
+- the inline visual system from the canonical template: light page background,
+  centered max-width content, `.handoff` summary card, `.meta` fact cards,
+  responsive tables, priority/status pills, finding/comparison/suggestion
+  cards, `.detail-grid` fields, `.evidence` figures, pass/blocked treatment,
+  support notes, and footer. The layout must remain usable on narrow screens
+  and with large evidence sets;
 - the audit timestamp, target URLs/routes, exact CSS viewport matrix actually
   checked, states checked, and any coverage reduction;
 - the run type (`initial`, `rerun`, or `repackage`) and audit ID;
