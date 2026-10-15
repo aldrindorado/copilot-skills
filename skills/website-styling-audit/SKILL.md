@@ -62,6 +62,11 @@ not create a second worker or invoke this skill again from the worker.
 The parent must make the kickoff standalone. It must pass all of the following
 resolved values rather than asking the worker to infer them:
 
+- **Skill contract access:** an absolute path to this installed `SKILL.md` that
+  is visible from the worker's host, plus an explicit instruction to read it
+  before the audit workflow and never invoke this skill recursively. If the
+  path is unavailable or inaccessible, include the fallback contract below in
+  the kickoff instead; do not make the worker guess a skill path.
 - **Targets and routes:** every deduplicated full URL, route, required page
   state, optional local project path, and any target-specific access limits.
 - **Scope and coverage:** CSS-first/read-only scope, requested issue categories,
@@ -71,8 +76,9 @@ resolved values rather than asking the worker to infer them:
   collision/rerun folder rule, and the expected local bundle path. Use an
   absolute local path when the host supports it.
 - **Mode and baseline:** `initial`, `rerun`, or `repackage`; the baseline
-  folder and user-requested comparison mode when applicable. The worker must
-  verify the baseline itself before using its evidence.
+  folder, any metadata-only values recovered by the parent, and the
+  user-requested comparison mode when applicable. The worker must reread and
+  verify the complete baseline itself before using its evidence.
 - **Prerequisite results:** the complete `PASS`/`BLOCKED`/`PENDING` table,
   executable paths and versions, Playwright capability and browser
   initialization results, process-runner result, filesystem writability
@@ -85,14 +91,26 @@ Use this compact structure in the kickoff prompt:
 
 ```text
 Task: Perform the delegated website styling audit yourself. Do not create another session or delegate again.
+Skill contract path: <absolute worker-accessible path to this SKILL.md, or unavailable>
+Skill contract instruction: Read the contract before navigation or output; never invoke the skill recursively.
+Contract fallback: If the path is unavailable, use this kickoff as authoritative. Follow the report.html template, findings.json and evidence-map.json schemas, originalEvidenceId pairing, standard-library PNG embedding procedure, canonical bundle-containment checks, exact comparisonStatus enum, post-write validator, and completion/blocker reporting contract described here. If neither the file nor this fallback is available, stop as BLOCKED before navigation or output.
 Targets/routes: <full URLs, routes, states, and optional local project path>
 Scope/coverage: <CSS-first scope, viewports, safe UI states, exclusions>
 Output: <base directory, surface label, collision rule, expected bundle path>
-Mode/baseline: <initial, rerun, or repackage; baseline details>
+Mode/baseline: <initial, rerun, or repackage; baseline folder and metadata-only recovery values>
 Parent preflight: <complete status table, versions, browser/tool and filesystem results>
 Safety limits: <read-only and authentication limits>
 Report to parent: <required completion fields and exact blocked/untested reporting>
 ```
+
+The fallback contract must remain concrete rather than referring the worker
+back to the unavailable file: use the supplied HTML template and exact JSON
+root/item fields, embed only validated local PNG bytes with the standard
+library, enforce `originalEvidenceId` pairs and canonical path containment,
+use `not applicable`, `compared`, or `not run` for root comparison status, run
+the complete post-write validator, and report exact bundle paths, validation
+results, blocked or untested checks, or the missing prerequisite as **Blocked**.
+The worker must not invoke `website-styling-audit` to obtain the contract.
 
 The parent must wait for the worker's completion report; an idle notification
 alone is not proof that the audit finished. The worker must report the exact
@@ -131,21 +149,29 @@ finishes without claiming that it was checked.
 
 ## First-run prerequisite preflight
 
-The parent coordinator runs this gate before asking for missing audit inputs,
-reading a baseline or local project for audit evidence, opening a target,
-invoking browser interactions, creating an output directory, taking
-screenshots, or creating the nested worker. Do not start an audit or write
-local output while a required check is `Blocked` or `Pending`. A successful
-parent preflight authorizes delegation only; it does not authorize the parent
-to perform audit work.
+The parent coordinator runs this gate before opening a target, invoking
+browser interactions, creating an output directory, taking screenshots, or
+creating the nested worker. Do not start an audit or write local output while
+a required check is `Blocked` or `Pending`. A successful parent preflight
+authorizes delegation only; it does not authorize the parent to perform audit
+work.
 
-The preflight has two phases:
+The preflight has three phases:
 
 1. Check host capabilities that do not depend on the user's target or output
    path. Do this without navigating to a website or creating audit files.
-2. After the user supplies the required URL, baseline, project path, and
-   output base, validate the mode-specific target and destination. Only then
-   begin the audit workflow.
+2. If an existing audit folder is supplied, resolve that folder and its
+   required metadata files canonically under the supplied baseline folder. The
+   parent may parse only root metadata needed to avoid asking the user to
+   repeat it: `auditId`, `surfaceLabel`, `targets`, timestamps, `runType`,
+   `comparisonStatus`, and baseline identifiers. It may not read report prose,
+   findings, occurrences, evidence-map items, screenshot bytes, or application
+   source, and it must not derive findings or treat metadata as current
+   evidence. Use this metadata-only recovery to ask for the mode when it is
+   missing and to recover a target URL or surface label when present.
+3. After the mode and any genuinely missing target, project path, or output
+   base are resolved, validate the mode-specific target and destination. Only
+   then begin the audit workflow.
 
 Report the result as a short status table with `PASS`, `BLOCKED`, or `PENDING`
 for every item, including the detected executable/version or the exact
@@ -157,6 +183,13 @@ fallback that was not used into the worker kickoff and the report's validation
 notes. After the parent preflight passes, the worker must re-check
 session-specific capabilities before navigation or output and report any
 changed result.
+
+For a folder-only input, the parent asks only for the missing mode
+(`rerun`/`recheck` or `repackage`) and any metadata that was absent or
+conflicting. The worker performs the complete baseline recovery phase after
+delegation and before target-dependent navigation or output. This preserves
+the no-findings-before-delegation boundary without forcing the user to repeat
+baseline URLs, routes, labels, or timestamps.
 
 ### Required capabilities for every run
 
@@ -257,8 +290,9 @@ the verified baseline.
 Use the URLs, routes, and constraints already supplied by the user. If a
 required input is missing, ask for one item at a time:
 
-1. Ask for one or more full `https://` or `http://` website URLs. Preserve the
-   route for each URL and remove exact duplicates.
+1. Ask for one or more full `https://` or `http://` website URLs when no
+   existing baseline metadata supplies them. Preserve the route for each URL
+   and remove exact duplicates.
 2. Ask for specific routes or page states only when the requested scope cannot
    be inferred from the supplied URLs. Do not crawl an entire site by default.
 3. Ask for a local project path only when the user wants CSS/source context or
@@ -309,12 +343,38 @@ the source tree only after the user explicitly confirms that choice for this
 audit. If the audit targets only a remote URL, there is no project-root
 restriction, but the base directory must still exist and be writable.
 
+### Canonical bundle containment
+
+Before the worker reads baseline evidence or writes the current
+`report.html`, it must resolve the surface folder and every bundle path through
+symlinks and junctions. The canonical `report.html`, `audit-files`,
+`findings.json`, `evidence-map.json`, `screenshots`, `screenshots\original`,
+`screenshots\annotated`, and every mapped current `file` must remain under the
+canonical current surface folder using complete path segments, not
+string-prefix checks. Reject missing required directories, absolute or
+traversal paths, symlinks/junctions that resolve outside the surface, and any
+mapped file that escapes the appropriate screenshots folder. An optional
+`baselineFile` is metadata-only: if it is resolved, canonicalize it against
+the explicitly verified sibling baseline surface and never use it as an HTML
+path or an untrusted read target. Perform these checks before reading a JSON
+file and again before opening `report.html` for writing.
+
+The recovered baseline folder is validated against its own canonical surface
+while the worker reads it. A resolved `baseline.path` may remain outside the
+current output surface as provenance metadata, but it is never used as an HTML
+link, an output path, or an implicit read target. Baseline evidence is copied
+only through explicitly validated sibling paths.
+
 ## Existing audit folder input and run mode
 
-The nested worker performs the baseline read and run-mode decision after the
-parent passes the folder path in the kickoff. The parent may validate that the
-path exists and is suitable as an input, but must not read its evidence or
-derive findings before delegation.
+The parent performs only the safe metadata-only recovery described in
+[First-run prerequisite preflight](#first-run-prerequisite-preflight): it
+canonicalizes the folder and required metadata paths, reads the allowed root
+fields, and asks for the mode if it was not supplied. It must not read
+baseline evidence, report prose, screenshot bytes, application source, or
+derive findings before delegation. The nested worker performs the complete
+baseline read and run-mode verification after it receives the kickoff and
+before any target-dependent navigation or output.
 
 Accept an existing audit output folder as an input. A valid audit folder has
 `report.html` and `audit-files\findings.json` plus
@@ -322,6 +382,10 @@ Accept an existing audit output folder as an input. A valid audit folder has
 never as the audited website source and never as proof of the current live
 state. Do not read its application source files, start a server from it, or
 use its screenshots as current evidence.
+
+After delegation and before target-dependent navigation or output, the worker
+performs the following complete baseline recovery. The parent does not perform
+these reads.
 
 Before deciding what work to do, read the folder in this order:
 
@@ -337,9 +401,12 @@ Before deciding what work to do, read the folder in this order:
 Recover the target URL(s), route(s), surface label, source audit timestamp,
 viewport matrix, states, finding IDs, selectors/regions, measurements,
 recommendations, state-test matrix, evidence pairs, blockers, and output paths before asking for
-information already present. Prefer JSON for exact values and use HTML as the
-fallback. If a required field is missing or the sources conflict, ask one
-focused question about that field instead of guessing.
+information already present. The worker performs this full recovery. The
+parent may recover only the root metadata needed for mode selection and
+kickoff; it must not use the worker's evidence fields as a shortcut.
+Prefer JSON for exact values and use HTML as the fallback only in the worker.
+If a required field is missing or the sources conflict, ask one focused
+question about that field instead of guessing.
 
 The core baseline fields are target URL(s), route(s), surface label, source
 audit timestamp, viewport matrix, states, finding IDs, occurrence/selector
@@ -351,7 +418,8 @@ viewport, state, finding, or evidence mapping.
 When a folder is supplied without an explicit mode, ask one focused question:
 "Should I rerun/recheck the live target and compare it with this baseline, or
 repackage the existing evidence without navigating to the site?" Do not infer
-the mode from the folder name alone.
+the mode from the folder name alone. Ask this after metadata-only recovery so
+the user does not need to repeat baseline URLs, routes, labels, or timestamps.
 
 Use this decision table:
 
@@ -696,20 +764,29 @@ Capture original screenshots for representative tested states and preserve
 those files. For every confirmed visual issue, create a separate annotated
 copy. Do not annotate a **Suggestion** as a confirmed defect.
 
-1. Capture a viewport-only screenshot in the same stable state used for the
-   finding. Before or immediately after capture, record
+1. Capture a viewport-only or explicitly clipped screenshot in the same stable
+   state used for the finding. Before or immediately after capture, record
    `window.innerWidth`, `window.innerHeight`, `window.devicePixelRatio`, the
-   screenshot bitmap width and height, and any clip origin.
+   screenshot bitmap width and height, and the CSS clip origin and dimensions
+   when a clip is used.
 2. Measure the affected element with its exact
    `getBoundingClientRect()` or Playwright locator bounding box. Do not use
    guessed coordinates, document coordinates, or a measurement from a
    different viewport or state. Do not scroll between measurement and capture.
-3. Map CSS pixels to bitmap pixels. For a viewport screenshot, use
+3. Map CSS pixels to bitmap pixels. For an unclipped viewport screenshot, use
    `scaleX = bitmapWidth / innerWidth` and
    `scaleY = bitmapHeight / innerHeight`, then multiply the rectangle's
-   viewport-relative `x`, `y`, `width`, and `height` by those scales. If the
-   screenshot is clipped, subtract the clip origin before scaling. Account for
-   `devicePixelRatio`; do not assume it is `1`.
+   viewport-relative `x`, `y`, `width`, and `height` by those scales. For a
+   clipped screenshot with CSS clip rectangle
+   `{x: clipX, y: clipY, width: clipWidth, height: clipHeight}`, use
+   `scaleX = bitmapWidth / clipWidth` and
+   `scaleY = bitmapHeight / clipHeight`, then calculate
+   `bitmapX = (rect.x - clipX) * scaleX`,
+   `bitmapY = (rect.y - clipY) * scaleY`,
+   `bitmapWidth = rect.width * scaleX`, and
+   `bitmapHeight = rect.height * scaleY`. Record the CSS clip origin and
+   dimensions in metadata; do not use viewport dimensions for a clipped image.
+   Account for `devicePixelRatio`; do not assume it is `1`.
 4. On the copy, draw a non-destructive circle or box around the affected
    region, a numbered marker and arrow outside the defect, and a short
    `Styling Issue - N` label that does not cover the evidence. Include the
@@ -937,6 +1014,7 @@ explicit tokens, not guessed paths or broad string replacement:
 ```html
 <img data-audit-image-id="EV-WS-001-01"
      data-audit-image-kind="annotated"
+     data-audit-original-evidence-id="EV-WS-001-02"
      src="__AUDIT_IMAGE__EV-WS-001-01__"
      alt="Styling Issue - 1 (WS-001), header nav at 390 x 844 in the default state">
 <a data-audit-image-id="EV-WS-001-02"
@@ -1013,6 +1091,14 @@ def inside(path, root):
     except ValueError:
         return False
 
+def bundle_path(path, surface, label, required=False):
+    resolved = path.resolve()
+    if not inside(resolved, surface):
+        fail(f"{label} resolves outside the surface folder")
+    if required and not resolved.exists():
+        fail(f"{label} is missing")
+    return resolved
+
 def png_dimensions(raw, evidence_id):
     if raw[:8] != b"\x89PNG\r\n\x1a\n":
         fail(f"{evidence_id} is not a valid PNG")
@@ -1085,10 +1171,27 @@ class AttributeReader(HTMLParser):
 
 surface = Path(sys.argv[1]).resolve()
 template = Path(sys.argv[2]).resolve()
-report = (surface / "report.html").resolve()
-map_file = (surface / "audit-files" / "evidence-map.json").resolve()
-bundle = (surface / "audit-files").resolve()
-screenshots = (bundle / "screenshots").resolve()
+if not surface.is_dir():
+    fail("surface folder is missing or not a directory")
+report = bundle_path(surface / "report.html", surface, "report.html")
+bundle = bundle_path(surface / "audit-files", surface, "audit-files", required=True)
+map_file = bundle_path(
+    bundle / "evidence-map.json", surface, "evidence-map.json", required=True
+)
+screenshots = bundle_path(
+    bundle / "screenshots", surface, "screenshots", required=True
+)
+if not bundle.is_dir() or not screenshots.is_dir():
+    fail("audit-files or screenshots is missing or not a directory")
+for directory_name in ("original", "annotated"):
+    screenshot_dir = bundle_path(
+        screenshots / directory_name,
+        surface,
+        f"screenshots/{directory_name}",
+        required=True,
+    )
+    if not screenshot_dir.is_dir():
+        fail(f"screenshots/{directory_name} is missing or not a directory")
 
 if not template.is_file() or not map_file.is_file():
     fail("template or evidence-map.json is missing")
@@ -1109,9 +1212,11 @@ for item in items:
         continue
 
     relative_file = Path(item.get("file", ""))
-    if relative_file.is_absolute():
+    if relative_file.is_absolute() or relative_file.drive:
         fail(f"{evidence_id} uses an absolute file path")
-    image = (surface / relative_file).resolve()
+    if ".." in relative_file.parts:
+        fail(f"{evidence_id} uses path traversal")
+    image = bundle_path(surface / relative_file, surface, evidence_id)
     if not inside(image, screenshots) or not image.is_file():
         fail(f"{evidence_id} is outside the screenshot bundle or missing")
     mime = MIME_BY_SUFFIX.get(image.suffix.lower())
@@ -1227,6 +1332,7 @@ for evidence_id in tokens:
     if embedded[evidence_id]["uri"] not in rendered:
         fail(f"embedded URI is missing: {evidence_id}")
 
+report = bundle_path(report, surface, "report.html")
 with report.open("w", encoding="utf-8", newline="\n") as output:
     output.write(rendered)
 ```
@@ -1325,7 +1431,10 @@ An explicitly requested `report.md` may be an additional sibling, but it does
 not replace any required path. The validator must:
 
 1. Confirm every required file and directory exists and that no required path
-   was redirected outside the surface folder.
+   was redirected outside the canonical surface folder. Resolve symlinks and
+   junctions before reading or writing; reject a `report.html`, `audit-files`,
+   `findings.json`, `evidence-map.json`, `screenshots`, or screenshot child
+   path whose canonical target is outside the surface.
 2. Parse both JSON files as UTF-8 JSON. Check every required root field listed
    in the machine-readable schema, verify that finding IDs, occurrence IDs,
    and evidence IDs are present and unique, and reject malformed or duplicate
@@ -1347,11 +1456,19 @@ not replace any required path. The validator must:
    `data-audit-original-evidence-id` that matches its map item's
    `originalEvidenceId`, and that paired original ID must be used by exactly
    one embedded original-image link.
-4. Resolve every `file` and optional `baselineFile` in `evidence-map.json`
-   relative to the surface folder. Require each mapped file to exist, each
-   issue evidence item to reference a valid finding and occurrence, each
-   `findingLabel` to match the finding's stable ID/label pair, and each
-   occurrence `evidenceIds` entry to resolve to exactly one map item.
+4. Resolve every current `file` in `evidence-map.json` relative to the
+   current surface after canonicalizing the path. Resolve an optional
+   `baselineFile` only against the explicitly verified sibling baseline
+   surface, never against an arbitrary path from the JSON. Reject absolute
+   or traversal current paths and symlink/junction targets outside the
+   appropriate canonical surface or screenshots folder. A relative
+   `baselineFile` may contain the representation needed to reach that known
+   sibling, but its canonical target must remain inside the verified baseline
+   screenshots folder and it must never be used as an HTML path. Require each
+   mapped current file to exist, each issue evidence item to reference a valid
+   finding and occurrence, each `findingLabel` to match the finding's stable
+   ID/label pair, and each occurrence `evidenceIds` entry to resolve to
+   exactly one map item.
 5. Require every `kind: "annotated"` item to include exactly one
    `originalEvidenceId` that resolves to one `kind: "original"` item. Require
    the paired items to share `findingId`, `occurrenceId`, `url`, `route`,
@@ -1362,8 +1479,12 @@ not replace any required path. The validator must:
    annotated items or annotated image links.
 6. Check that each confirmed annotated image and its original use the stable
    evidence ID and viewport filename, and that the CSS rectangle, bitmap
-   rectangle, screenshot dimensions, `devicePixelRatio`, scale factors, and
-   clip origin are present for screenshot measurements.
+   rectangle, screenshot dimensions, `devicePixelRatio`, scale factors, clip
+   origin, and clip dimensions are present for screenshot measurements. For an
+   unclipped viewport screenshot, require both clip fields to be `null`; for a
+   clipped screenshot, require CSS-pixel `{x, y}` clip origin and
+   `{width, height}` clip dimensions and verify that the bitmap rectangle uses
+   the clipped scale formula rather than viewport dimensions.
 7. For a rerun, verify that every prior finding ID appears in the comparison
    data, even when it is `Fixed`, `Not verified`, or `Baseline only`, and that
    every current finding is either matched to a prior ID or assigned a new ID
@@ -1487,9 +1608,12 @@ valid relative path to a known sibling baseline folder, otherwise set it to
 `null` and keep the baseline reference in the report text. For screenshots,
 `measurement` must contain `cssRect`, `bitmapRect`, and a `screenshot` object
 with `width`, `height`, `devicePixelRatio`, `scaleX`, `scaleY`, and
-`clipOrigin`. Keep the exact same IDs and filenames in both JSON files, the
-HTML report, and any optional Markdown export. The HTML report embeds the
-image bytes; these JSON file paths remain archive/machine-handoff metadata.
+`clipOrigin` and `clipDimensions`. For an unclipped viewport screenshot, set
+both clip fields to `null`; for a clipped screenshot, set
+`clipOrigin` to `{x, y}` and `clipDimensions` to `{width, height}` in CSS
+pixels. Keep the exact same IDs and filenames in both JSON files, the HTML
+report, and any optional Markdown export. The HTML report embeds the image
+bytes; these JSON file paths remain archive/machine-handoff metadata.
 
 Store each evidence item's `file` and optional `baselineFile` paths relative
 to the current output folder, using the `audit-files/` prefix for current
@@ -1539,8 +1663,8 @@ the same finding, occurrence, URL/route, viewport, and state; do not infer the
 pair only from filename order or suffixes.
 Use the exact `getBoundingClientRect()` or locator coordinates and the CSS to
 bitmap scaling rules from the screenshot workflow above. Preserve
-`devicePixelRatio`, screenshot dimensions, clip origin, and the resulting
-bitmap rectangle in `evidence-map.json`. Put each evidence ID in exactly one
+`devicePixelRatio`, screenshot dimensions, clip origin, clip dimensions, and
+the resulting bitmap rectangle in `evidence-map.json`. Put each evidence ID in exactly one
 occurrence's `evidenceIds` array, except baseline IDs, which have no finding
 or occurrence.
 
