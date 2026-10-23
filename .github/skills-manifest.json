@@ -5,6 +5,7 @@
     "qa-smoke-testing",
     "pr-with-review",
     "staging-deployment",
-    "test-prod-by-pr"
+    "test-prod-by-pr",
+    "website-styling-audit"
   ]
 }
