@@ -586,7 +586,7 @@ Check the following categories:
   into unreadable widths; images, media, and containers preserve intended
   proportions.
 - Navigation, dialogs, banners, cookie notices, and sticky controls do not
-  cover primary content or trap focus visually.
+  cover primary content or obscure controls.
 - Breakpoint changes are coherent rather than leaving partially hidden,
   duplicated, or misaligned controls.
 - Check both document overflow and the affected visible region. A horizontal
@@ -614,11 +614,11 @@ Check the following categories:
 #### Color, contrast, and visual hierarchy
 
 - Sample foreground/background pairs for body text, large text, links,
-  buttons, placeholders, disabled text, borders, icons, and focus indicators.
+  buttons, placeholders, disabled text, borders, and icons.
 - When measuring contrast, use the WCAG thresholds as signals: `4.5:1` for
   normal text, `3:1` for large text, and `3:1` for essential non-text UI
-  components and focus indicators. Record the sampled colors and element
-  context; do not generalize from one sample to the entire site.
+  components. Record the sampled colors and element context; do not generalize
+  from one sample to the entire site.
 - Check that states are not conveyed by color alone and that disabled or
   low-emphasis styling remains distinguishable from missing or broken content.
 
@@ -626,9 +626,8 @@ Check the following categories:
 
 - Compare repeated buttons, links, inputs, cards, alerts, badges, navigation
   items, icons, radii, borders, shadows, and spacing.
-- Check default, hover, focus, expanded, selected, disabled, error, empty, and
-  loading states when they can be exposed safely without submitting or
-  mutating data.
+- Check default, hover, expanded, selected, disabled, error, empty, and loading
+  states when they can be exposed safely without submitting or mutating data.
 - If JavaScript adds the class, attribute, inline style, or data that exposes a
   state, inspect only enough of that trigger to explain the CSS result. Report
   the missing or incorrect styling as the finding and list the script behavior
@@ -651,9 +650,6 @@ Check the following categories:
 
 #### Accessibility-related styling signals
 
-- Move focus through visible controls with keyboard navigation and verify a
-  clear focus indicator, sufficient contrast, and no focus ring clipped by
-  overflow or a sticky container.
 - Check that headings, labels, landmarks, link/button affordances, and error
   messages remain visually distinguishable and are not conveyed by color alone.
 - Check likely touch targets and spacing for cramped controls. Record the
@@ -663,6 +659,13 @@ Check the following categories:
   requirement calls for it, and record the emulated setting.
 - Use a targeted accessibility snapshot to support the visual observation.
   Accessibility-tree presence alone does not prove that the styling is usable.
+
+Keyboard input and focus-state testing are out of scope. Do not press `Tab`,
+`Shift+Tab`, or other keys to move focus, do not inspect `:focus` or
+`:focus-visible` as an audit state, and do not report keyboard or focus-state
+coverage. If a focus-specific issue appears incidentally while checking another
+state, record it as out of scope and untested rather than as a confirmed
+finding.
 
 ### 4. Exercise safe UI states
 
@@ -705,17 +708,6 @@ machine ID. Annotate only that confirmed issue.
   pointer away and confirm the target returns to its prior state.
 - Do not use a hover-only CSS rule as proof when no user-reachable target can
   be located. Mark it untested or Blocked.
-
-#### Focus
-
-- Use keyboard `Tab` and `Shift+Tab` on visible controls. Do not inject a
-  focus class or call a synthetic focus event as evidence.
-- Record `:focus`/`:focus-visible`, outline, box-shadow, color, contrast,
-  clipping, and whether the indicator remains visible at mobile and desktop
-  viewports.
-- Check that focus is not hidden behind overflow, sticky UI, or an overlay.
-  This is a styling signal only, not a claim of full accessibility
-  conformance.
 
 #### Selected or active
 
@@ -844,7 +836,7 @@ Use this priority order:
 | Priority | Use for |
 | --- | --- |
 | `P0` | A styling failure prevents access to essential content or controls across a supported viewport, or makes the interface effectively unusable. |
-| `P1` | Major overlap, clipping, unreadable text, broken responsive layout, or a high-impact focus/contrast problem on an important route. |
+| `P1` | Major overlap, clipping, unreadable text, broken responsive layout, or a high-impact contrast problem on an important route. |
 | `P2` | A repeated or meaningful inconsistency, moderate spacing/typography issue, or a narrower viewport/state defect with a practical workaround. |
 | `P3` | Minor polish issue with limited impact, or a low-frequency edge case. |
 | `Suggestion` | Subjective design, brand, or refinement recommendation. |
@@ -1128,7 +1120,7 @@ contract:
         <div class="meta-item"><strong>Viewports tested:</strong>
           {count and width range; exact matrix appears below}</div>
         <div class="meta-item"><strong>States tested:</strong>
-          {states checked}</div>
+          {non-keyboard states checked; never keyboard or focus}</div>
         <div class="meta-item"><strong>Run type:</strong>
           {initial, rerun, or repackage}</div>
         <div class="meta-item"><strong>Comparison:</strong>
@@ -1285,7 +1277,7 @@ contract:
             <thead><tr><th>Target/route</th><th>Viewports</th><th>States</th>
               <th>Result or limit</th></tr></thead>
             <tbody><tr><td>{URL and route}</td><td>{exact viewports}</td>
-              <td>{states checked}</td>
+              <td>{non-keyboard states checked}</td>
               <td>{coverage result or exact reduction and reason}</td></tr>
             </tbody>
           </table>
@@ -1853,7 +1845,8 @@ not replace any required path. The validator must:
    finding labels, comparison statuses, and `stateTests`. Confirm each `label`
    matches its stable ID suffix (`WS-001` -> `Styling Issue - 1`) and each
    state test has a trigger, default-vs-state measurement, evidence IDs,
-   restoration status, and outcome.
+   restoration status, and outcome. Reject keyboard or focus-state entries in
+   `statesChecked`, `stateTests`, coverage claims, and evidence state slugs.
 3. Parse the finalized `report.html` after the Python embedding step. Require
    every `img[src]` and every anchor marked
    `data-audit-image-kind="original"` to use a `data:image/<type>;base64,...`
@@ -1952,7 +1945,8 @@ JSON or rewrite selectors, numeric measurements, IDs, URLs, or filenames.
   URL/route, viewport, initial state, trigger, resulting state,
   selectors/regions, default-vs-state measurements, evidence IDs,
   restoration status, and outcome. State names not actually exercised must
-  not be presented as covered;
+  not be presented as covered. Keyboard and focus states are out of scope and
+  must not be presented as tested or covered;
 - prioritized findings with severity, classification, and confidence, with an
   friendly display label and stable machine ID, plus an occurrence block for
   every URL/route, viewport, state, selector or visible
@@ -2074,8 +2068,9 @@ Use a stable mapping:
 - filenames are
   `{evidenceId}-{route-slug}-{width}x{height}-{state-slug}-{original|annotated}.png`.
 For state tests, the `{state-slug}` is required and must match the state
-recorded in `stateTests` and `statesChecked` (for example `hover`, `focus`,
-`selected`, `expanded`, or `validation-error`).
+recorded in `stateTests` and `statesChecked` (for example `hover`, `selected`,
+`expanded`, or `validation-error`). Keyboard and focus states must not appear
+in either field.
 
 For example:
 
@@ -2192,8 +2187,8 @@ nested `general_chat` worker, and wait for that worker's completion report
 before returning results.
 
 - `Audit https://example.com for CSS styling issues at desktop and mobile widths.`
-- `Audit these routes for responsive layout, typography, contrast, and focus styling: https://example.com/, https://example.com/catalog.`
-- `Audit https://example.com/checkout for hover, focus, selected, expanded/collapsed, and validation-error styling where each state can be reached safely. Compare every exercised state with default, record blocked states, and use state slugs in the evidence filenames.`
+- `Audit these routes for responsive layout, typography, and contrast: https://example.com/, https://example.com/catalog.`
+- `Audit https://example.com/checkout for hover, selected, expanded/collapsed, and validation-error styling where each state can be reached safely without keyboard input. Compare every exercised state with default, record blocked states, and use state slugs in the evidence filenames.`
 - `Audit C:\Projects\storefront using its existing local URL, compare the shared header and button CSS across the supplied routes, and note any script that directly causes a visual mismatch.`
 - `Review https://example.com/checkout without submitting anything; report confirmed CSS issues separately from subjective polish suggestions and only mention scripts when they explain the styling.`
 - `Audit https://example.com/catalog. When prompted, use base directory \`C:\Website Audits\` and surface label \`Flynn's Tire And Auto Service - Home page\`. Open or share \`C:\Website Audits\Flynn's Tire And Auto Service - Home page\report.html\`; it is self-contained for visual review, while \`audit-files\` retains JSON mappings and unchanged PNG evidence for later GitHub or CI publication.`
