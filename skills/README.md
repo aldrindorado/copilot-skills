@@ -16,32 +16,78 @@ is installed from its own directory and must contain a `SKILL.md` file.
 | `test-prod-by-pr` | Verify that one or more approved, merged GitHub pull requests have reached their user-specified production websites. Use when asked to test, validate, or confirm production deployments from PRs. |
 | `website-styling-audit` | Delegate every audit, rerun, or repackage to one nested local chat worker using GPT-5.6 Luna with maximum reasoning and long context, then write a self-contained frontend-developer-ready report.html plus supporting local evidence files for CSS-driven responsive styling, layout, typography, color and contrast, component consistency, UI states, overflow, and accessibility-related styling signals. |
 
-## Website styling audit prerequisites
+## Team setup
 
-The parent session performs a prerequisite preflight before it creates the
-nested worker or allows navigation, full baseline-evidence reads, or bundle
-output. During preflight the parent may read only the canonical root metadata
-allowed by the skill contract for folder-only mode recovery. The worker must
-be a nested local chat child configured with model `gpt-5.6-luna`, reasoning
-effort `max`, and context tier `long_context` (the 1.1M context setting). It
-does not need a project, branch, worktree, or repository checkout. The parent
-passes the target URLs/routes, CSS scope, viewport/state requirements, output
-base and label, baseline/rerun mode, preflight results, safety limits, and
-expected local bundle path in the kickoff prompt. The worker performs the
-audit itself and must not create another audit session.
+### Install one skill
 
-A live audit requires the Playwright MCP browser capability set and a working
-browser runtime. Every run that writes the canonical bundle requires Python
-3.8 or newer, a local process runner, and an existing writable output
-directory. Repackaging an existing audit bundle does not need a browser;
-source-only runs record rendered checks as blocked.
+Install only the staging deployment skill:
 
-The skill never installs software or dependencies implicitly. If Python,
-Playwright, its browser runtime, a process runner, or a writable destination
-is missing, it reports the exact blocker and gives installation or remediation
-guidance before stopping. If nested-session creation or the exact requested
-model/context settings are unavailable, it reports delegation as blocked and
-does not silently use another model, create a project session, or execute
-directly. See the skill's `Delegated execution boundary` and `First-run
-prerequisite preflight` sections for the handoff, authentication, and supported
-fallback boundaries.
+```powershell
+npx skills add aldrindorado/copilot-skills@staging-deployment -g -y
+```
+
+`@staging-deployment` installs only `skills/staging-deployment`.
+
+### Install the website styling audit skill
+
+Install only the website audit skill:
+
+```powershell
+npx skills add aldrindorado/copilot-skills@website-styling-audit -g -y
+```
+
+`@website-styling-audit` installs only `skills/website-styling-audit`. Every
+audit, rerun, or repackage is delegated to one nested local chat worker with no
+project or repository checkout. The invoking session performs only the
+prerequisite preflight and kickoff handoff. The worker must use
+`gpt-5.6-luna` with `max` reasoning and `long_context` (the 1.1M context
+setting). Live audits require a working Playwright MCP browser capability and
+Python 3.8 or newer for the standard-library report embedding and validation
+steps. The skill checks these requirements before navigation or local output
+and never installs them implicitly. Repackaging an existing audit bundle
+without navigation does not require a browser, but it still uses the nested
+chat worker. If nested-chat creation or any requested worker setting is
+unavailable, the skill reports the limitation and does not fall back to a
+project session or direct execution.
+
+### Install all published skills
+
+Install every skill under this repository's `skills` directory:
+
+```powershell
+npx skills add aldrindorado/copilot-skills -g -y
+```
+
+### Legacy PowerShell installer
+
+1. Ask a repository administrator to invite you as a collaborator.
+2. Clone this repository to any local directory:
+
+   ```powershell
+   git clone https://github.com/aldrindorado/copilot-skills.git "$HOME\source\copilot-skills"
+   ```
+
+3. Install its skills into the local Copilot directory:
+
+   ```powershell
+   Set-Location "$HOME\source\copilot-skills"
+   .\scripts\Install-CopilotSkills.ps1
+   ```
+
+4. Restart GitHub Copilot Desktop if the new skills do not appear immediately.
+
+The installer refuses to overwrite an existing non-repository skill. To update
+skills previously installed by this repository, pull the latest changes and
+run:
+
+```powershell
+git pull
+.\scripts\Install-CopilotSkills.ps1 -Force
+```
+
+If `npx` is unavailable, use the legacy PowerShell installer on Windows or the
+installation method supported by your Copilot Desktop environment. After
+installing or updating a skill, restart GitHub Copilot Desktop if it does not
+appear immediately.
+
+Shared GitHub Copilot skills for the team
