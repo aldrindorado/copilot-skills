@@ -1,6 +1,6 @@
 ---
 name: deploy-code-review
-description: Launch a coordinated, read-only nested code-review session using GPT-5.6 Sol, medium reasoning, and long context. Use when the user asks to delegate, run, or perform a code review in a nested session or reviewer sub-session while carrying forward review context and instructions from the main session.
+description: Launch a coordinated, read-only nested code-review session using GPT-6.1 Sol, medium reasoning, and long context. Use when the user asks to delegate, run, or perform a code review in a nested session or reviewer sub-session while carrying forward review context and instructions from the main session.
 ---
 
 # Deploy code review
@@ -10,7 +10,7 @@ the coordinator and must not perform the delegated review itself.
 
 ## Fixed reviewer settings
 
-- model: `gpt-5.6-sol`
+- model: `gpt-6.1-sol`
 - reasoning effort: `medium`
 - context tier: `long_context` (1.1M context)
 - mode: `autopilot`
@@ -82,7 +82,7 @@ execution_location: local
 workspace_type: branch
 coordinate_with_creator: true
 notify_on_idle: once
-kickoff.model: gpt-5.6-sol
+kickoff.model: gpt-6.1-sol
 kickoff.reasoning_effort: medium
 kickoff.context_tier: long_context
 kickoff.mode: autopilot
