@@ -1,6 +1,6 @@
 ---
 name: website-styling-audit
-description: Audit live websites through a required nested local chat worker, recover existing audit folders for reruns or repackaging, and always write a frontend-developer-ready report.html plus supporting local evidence files after an unslop wording pass. Before any audit action or local output, verify the available browser, Python, process, and filesystem capabilities and give installation guidance without installing anything implicitly. The nested worker uses GPT-5.6 Luna with maximum reasoning and long context. The scope is CSS-driven responsive styling, layout, typography, color and contrast, component consistency, UI states, overflow, and accessibility-related styling signals. If explicitly requested, reuse the local bundle for GitHub PR or CI publication. Note scripts or runtime causes only when they directly produce the styling issue.
+description: Audit live websites through a required nested local chat worker, recover existing audit folders for reruns or repackaging, and always write a frontend-developer-ready report.html plus supporting local evidence files after an unslop wording pass. Before any audit action or local output, verify the available browser, Python, process, and filesystem capabilities and give installation guidance without installing anything implicitly. The nested worker uses GPT-6 Luna with maximum reasoning and long context. The scope is CSS-driven responsive styling, layout, typography, color and contrast, component consistency, UI states, overflow, and accessibility-related styling signals. If explicitly requested, reuse the local bundle for GitHub PR or CI publication. Note scripts or runtime causes only when they directly produce the styling issue.
 ---
 
 # Website styling audit
@@ -44,7 +44,7 @@ default, fake, or inherited project. Use these exact kickoff settings:
   "notify_on_idle": "once",
   "kickoff": {
     "mode": "autopilot",
-    "model": "gpt-5.6-luna",
+    "model": "gpt-6-luna",
     "reasoning_effort": "max",
     "context_tier": "long_context",
     "prompt": "<standalone audit handoff>"
@@ -134,7 +134,7 @@ or alter the worker's evidence, JSON schemas, or findings.
 
 If nested local-chat creation is unavailable, the returned worker is not a
 `general_chat` child of the invoking parent, or Copilot Desktop cannot provide
-the exact `gpt-5.6-luna`, `max`, and `long_context` settings, report delegation
+the exact `gpt-6-luna`, `max`, and `long_context` settings, report delegation
 as **Blocked** with the missing capability and practical remediation. Do not
 silently fall back to another model, reduce the settings, create a project
 session, run the audit in the parent, or claim that a bundle was produced.
@@ -2182,7 +2182,7 @@ must not invoke them against an audit target.
 
 All examples below describe the work handed to the nested audit worker. The
 invoking session must run the prerequisite preflight, create the required
-`gpt-5.6-luna`/`max`/`long_context` local chat child, verify that it is the
+`gpt-6-luna`/`max`/`long_context` local chat child, verify that it is the
 nested `general_chat` worker, and wait for that worker's completion report
 before returning results.
 
