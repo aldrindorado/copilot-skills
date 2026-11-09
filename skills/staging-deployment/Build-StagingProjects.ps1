@@ -15,6 +15,8 @@ $ErrorActionPreference = 'Stop'
 # Deployment -WhatIf previews prepare real local artifacts, never remote writes.
 $WhatIfPreference = $false
 
+. (Join-Path $PSScriptRoot 'StagingPath.ps1')
+
 function Get-MSBuildExecutable {
     param(
         [string]$ConfiguredPath
@@ -61,18 +63,22 @@ function Get-MSBuildExecutable {
 }
 
 $repositoryRoot = [System.IO.Path]::GetFullPath($RepositoryRoot)
-if (-not (Test-Path -LiteralPath (Join-Path $repositoryRoot 'Tireweb Sites\Web') -PathType Container)) {
+$webRootPath = Get-StagingSafeLocalPath -RepositoryRoot $repositoryRoot -RelativePath 'Tireweb Sites\Web'
+if (-not (Test-Path -LiteralPath $webRootPath -PathType Container)) {
     throw "The source checkout or committed snapshot has no web root: $repositoryRoot"
 }
 
 $normalizedChangedPaths = @(
     $ChangedPaths |
         Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
-        ForEach-Object { $_.Trim().Replace('\', '/') } |
+        ForEach-Object { $_.Replace('\', '/') } |
         Sort-Object -Unique
 )
 if ($normalizedChangedPaths.Count -eq 0) {
     throw 'At least one changed path is required.'
+}
+foreach ($changedPath in $normalizedChangedPaths) {
+    $null = Get-StagingSafeLocalPath -RepositoryRoot $repositoryRoot -RelativePath $changedPath
 }
 
 # Keep this explicit so an unrelated project is never built or deployed implicitly.
@@ -130,8 +136,14 @@ if ($affectedMappings.Count -eq 0) {
     return
 }
 
+$webBinPath = Get-StagingSafeLocalPath -RepositoryRoot $repositoryRoot -RelativePath 'Tireweb Sites\Web\Bin'
+foreach ($mapping in $affectedMappings) {
+    $null = Get-StagingSafeLocalPath -RepositoryRoot $repositoryRoot -RelativePath $mapping.ProjectPath
+    $projectRelativeDirectory = Split-Path -Path $mapping.ProjectPath -Parent
+    $null = Get-StagingSafeLocalPath -RepositoryRoot $repositoryRoot -RelativePath (Join-Path $projectRelativeDirectory ("bin\{0}\{1}" -f $Configuration, $mapping.DllName))
+    $null = Get-StagingSafeLocalPath -RepositoryRoot $repositoryRoot -RelativePath ("Tireweb Sites\Web\Bin\{0}" -f $mapping.DllName)
+}
 $msbuild = Get-MSBuildExecutable -ConfiguredPath $MSBuildPath
-$webBinPath = Join-Path $repositoryRoot 'Tireweb Sites\Web\Bin'
 if (-not (Test-Path -LiteralPath $webBinPath -PathType Container)) {
     New-Item -ItemType Directory -Path $webBinPath -Force | Out-Null
 }
@@ -163,13 +175,14 @@ if ($packagesMissing) {
 }
 
 foreach ($mapping in $affectedMappings) {
-    $projectPath = Join-Path $repositoryRoot $mapping.ProjectPath
+    $projectPath = Get-StagingSafeLocalPath -RepositoryRoot $repositoryRoot -RelativePath $mapping.ProjectPath
     if (-not (Test-Path -LiteralPath $projectPath -PathType Leaf)) {
         throw "The mapped project was not found: $projectPath"
     }
 
-    $projectDirectory = Split-Path -Path $projectPath -Parent
-    $sourceDllPath = Join-Path $projectDirectory ("bin\{0}\{1}" -f $Configuration, $mapping.DllName)
+    $projectRelativeDirectory = Split-Path -Path $mapping.ProjectPath -Parent
+    $sourceRelativePath = Join-Path $projectRelativeDirectory ("bin\{0}\{1}" -f $Configuration, $mapping.DllName)
+    $sourceDllPath = Get-StagingSafeLocalPath -RepositoryRoot $repositoryRoot -RelativePath $sourceRelativePath
     if (Test-Path -LiteralPath $sourceDllPath -PathType Leaf) {
         Remove-Item -LiteralPath $sourceDllPath -Force
     }
@@ -192,11 +205,12 @@ foreach ($mapping in $affectedMappings) {
         Write-Host ($buildOutput -join [Environment]::NewLine)
     }
 
+    $sourceDllPath = Get-StagingSafeLocalPath -RepositoryRoot $repositoryRoot -RelativePath $sourceRelativePath
     if (-not (Test-Path -LiteralPath $sourceDllPath -PathType Leaf)) {
         throw "The build succeeded but the expected DLL was not found: $sourceDllPath"
     }
 
-    $webDllPath = Join-Path $webBinPath $mapping.DllName
+    $webDllPath = Get-StagingSafeLocalPath -RepositoryRoot $repositoryRoot -RelativePath ("Tireweb Sites\Web\Bin\{0}" -f $mapping.DllName)
     Copy-Item -LiteralPath $sourceDllPath -Destination $webDllPath -Force
 
     $webDll = Get-Item -LiteralPath $webDllPath

@@ -45,6 +45,8 @@ $manifestPath = Join-Path $env:TEMP 'ezytire-staging-release.json'
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+. (Join-Path $PSScriptRoot 'StagingPath.ps1')
+
 if ([string]::IsNullOrWhiteSpace($WinScpDirectory)) {
     $WinScpDirectory = Join-Path $PSScriptRoot 'WinSCP'
 }
@@ -98,6 +100,7 @@ function Get-GitFiles {
 function Assert-NotSensitivePath {
     param([Parameter(Mandatory = $true)][string]$RelativePath)
 
+    Assert-StagingRelativePath -RelativePath $RelativePath
     $path = $RelativePath.Replace('\', '/')
     $name = [System.IO.Path]::GetFileName($path)
     if ($name -eq 'WebsiteOptions.config' -or
@@ -114,7 +117,7 @@ function Resolve-IncludePaths {
         if ([string]::IsNullOrWhiteSpace($path)) {
             throw 'IncludePaths cannot contain an empty path.'
         }
-        $normalized = $path.Trim().Replace('\', '/')
+        $normalized = $path.Replace('\', '/')
         $null = Get-LocalFilePath -RepositoryRoot $Root -RelativePath $normalized
         if (-not $normalized.Contains('/')) {
             $matches = @(Get-ChildItem -LiteralPath $WebRoot -File -Recurse |
@@ -149,31 +152,7 @@ function Get-LocalFilePath {
         [string]$RelativePath
     )
 
-    $RelativePath = $RelativePath.Replace('\', '/')
-    if ([System.IO.Path]::IsPathRooted($RelativePath) -or $RelativePath -match '(^|/)\.\.(/|$)' -or $RelativePath.Contains(':')) {
-        throw "Refusing to deploy an unsafe repository path: $RelativePath"
-    }
-
-    $localPath = [System.IO.Path]::GetFullPath((Join-Path $RepositoryRoot ($RelativePath -replace '/', '\')))
-    $repositoryPrefix = $RepositoryRoot.TrimEnd('\') + '\'
-    if (-not $localPath.StartsWith($repositoryPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
-        throw "Refusing to deploy a file outside the repository: $RelativePath"
-    }
-
-    if ((Get-Item -LiteralPath $RepositoryRoot -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
-        throw "Refusing to deploy through a symbolic link or junction source root: $RepositoryRoot"
-    }
-    $currentPath = $localPath
-    while ($currentPath.Length -gt $RepositoryRoot.TrimEnd('\').Length) {
-        if (Test-Path -LiteralPath $currentPath) {
-            $item = Get-Item -LiteralPath $currentPath -Force
-            if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
-                throw "Refusing to deploy through a symbolic link or junction: $RelativePath"
-            }
-        }
-        $currentPath = Split-Path -Path $currentPath -Parent
-    }
-    return $localPath
+    return Get-StagingSafeLocalPath -RepositoryRoot $RepositoryRoot -RelativePath $RelativePath
 }
 
 function Get-FileSha256 {
@@ -579,10 +558,20 @@ if ($LocalRoot.Replace('\', '/').TrimEnd('/') -ne 'Tireweb Sites/Web') {
     throw 'LocalRoot must be Tireweb Sites\Web. Other deployment roots are not supported.'
 }
 $LocalRoot = 'Tireweb Sites\Web'
-if ($IncludePaths -and $GenerateListFromGitLogArgs) {
+$hasIncludePaths = $PSBoundParameters.ContainsKey('IncludePaths')
+$hasGitLogArgs = $PSBoundParameters.ContainsKey('GenerateListFromGitLogArgs')
+foreach ($selectionParameter in @('IncludePaths', 'GenerateListFromGitLogArgs')) {
+    if ($PSBoundParameters.ContainsKey($selectionParameter)) {
+        $values = @($PSBoundParameters[$selectionParameter])
+        if ($values.Count -eq 0 -or @($values | Where-Object { [string]::IsNullOrWhiteSpace($_) }).Count -gt 0) {
+            throw "$selectionParameter must contain at least one nonblank value and cannot contain empty or blank entries."
+        }
+    }
+}
+if ($hasIncludePaths -and $hasGitLogArgs) {
     throw 'IncludePaths cannot be combined with GenerateListFromGitLogArgs.'
 }
-if (($IncludePaths -or $GenerateListFromGitLogArgs) -and $PSBoundParameters.ContainsKey('ChangeScope')) {
+if (($hasIncludePaths -or $hasGitLogArgs) -and $PSBoundParameters.ContainsKey('ChangeScope')) {
     throw 'Explicit paths, Git log selection, and ChangeScope are separate selection modes.'
 }
 if (-not [string]::IsNullOrWhiteSpace($DeploymentManifestSha256) -and $DeploymentManifestSha256 -notmatch '^[a-fA-F0-9]{64}$') {
@@ -610,16 +599,16 @@ if (-not $WhatIfPreference -and [string]::IsNullOrWhiteSpace($DeploymentManifest
 }
 
 if (-not [string]::IsNullOrWhiteSpace($DeploymentManifestPath)) {
-    if ($IncludePaths -or $GenerateListFromGitLogArgs -or $PSBoundParameters.ContainsKey('ChangeScope') -or $PSBoundParameters.ContainsKey('BaseRef') -or $MSBuildPath) {
+    if ($hasIncludePaths -or $hasGitLogArgs -or $PSBoundParameters.ContainsKey('ChangeScope') -or $PSBoundParameters.ContainsKey('BaseRef') -or $MSBuildPath) {
         throw 'DeploymentManifestPath cannot be combined with selection or build options.'
     }
 
     $changedFiles = Get-ManifestFiles -ManifestPath $DeploymentManifestPath -RepositoryRoot $repositoryRoot -LocalRootPrefix $localRootPrefix -RemoteRoot $remoteRootPath
 }
-elseif ($IncludePaths) {
+elseif ($hasIncludePaths) {
     $changedFiles = @(Resolve-IncludePaths -Paths $IncludePaths -Root $repositoryRoot -WebRoot $localRootPath)
 }
-elseif ($GenerateListFromGitLogArgs) {
+elseif ($hasGitLogArgs) {
     if ($GenerateListFromGitLogArgs -contains '--' -or @($GenerateListFromGitLogArgs | Where-Object { $_ -match '^--(output|format|pretty|name|raw|stat|numstat|patch|diff-filter|no-diff|no-name|quiet|exit-code)|^-[pz]$' }).Count -gt 0) {
         throw 'Git log arguments may select revisions, dates, and merge traversal, but cannot override the file-list output format.'
     }

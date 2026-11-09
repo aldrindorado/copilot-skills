@@ -71,6 +71,10 @@ Missing explicit files block deployment. Do not guess, use wildcards, or
 silently omit requested files. Explicit source project paths are accepted and
 converted to supported DLLs rather than uploaded directly.
 
+Supplied file lists and Git log argument lists must be nonempty and contain no
+null, empty, or whitespace-only entries. An empty selection never falls back to
+uncommitted changes.
+
 Do not combine selection modes. Manifest replay is a separate mode and does
 not scan Git, resolve filenames, export snapshots, or rebuild projects.
 
@@ -147,6 +151,10 @@ Sensitive files are blocked in every mode, including manifest replay:
 `WebsiteOptions.config`, `App_Files\*.config`, `.env` variants, secrets and
 appsettings JSON variants, certificates, and private keys. Traversal and
 symbolic-link/junction paths are rejected.
+Windows path components ending in a dot or space are rejected before sensitive
+file checks, including during manifest replay. Build source and destination
+paths are checked for junctions before creating directories, deleting previous
+DLL outputs, or staging rebuilt DLLs.
 
 ## Approve and deploy
 

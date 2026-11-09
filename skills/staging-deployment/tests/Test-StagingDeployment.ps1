@@ -86,6 +86,23 @@ try {
     Write-FixtureFile 'Tireweb Sites\Web\Scripts\staged.js' 'staged'
     Invoke-FixtureGit @('add', 'Tireweb Sites/Web/Scripts/staged.js')
 
+    foreach ($parameterName in @('IncludePaths', 'GenerateListFromGitLogArgs')) {
+        foreach ($invalidList in @(
+            @{ Value = @() },
+            @{ Value = $null },
+            @{ Value = @('') },
+            @{ Value = @('   ') },
+            @{ Value = @('valid', '') },
+            @{ Value = @('valid', $null) }
+        )) {
+            $emptyManifest = New-ManifestPath
+            $options = @{ CreateDeploymentManifestPath = $emptyManifest }
+            $options[$parameterName] = $invalidList.Value
+            $null = Invoke-Deployment $options "$parameterName must contain at least one nonblank value"
+            Assert-True (-not (Test-Path -LiteralPath $emptyManifest)) 'Invalid supplied selections cannot prepare an unrelated release manifest.'
+        }
+    }
+
     $all = New-ManifestPath
     $null = Invoke-Deployment @{ ChangeScope = 'All'; BaseRef = 'development'; CreateDeploymentManifestPath = $all }
     $manifest = Get-Content $all -Raw | ConvertFrom-Json
@@ -131,6 +148,25 @@ try {
         $null = Invoke-Deployment @{ IncludePaths = @("Tireweb Sites\Web\$sensitive"); CreateDeploymentManifestPath = (New-ManifestPath) } 'sensitive file'
         Remove-Item -LiteralPath (Join-Path $repository "Tireweb Sites\Web\$sensitive") -Force
     }
+    Write-FixtureFile 'Tireweb Sites\Web\App_Files\options.config' 'harmless fixture configuration'
+    foreach ($alias in @(
+        'Tireweb Sites/Web/App_Files./options.config',
+        'Tireweb Sites/Web/App_Files /options.config',
+        'Tireweb Sites/Web/App_Files/options.config.',
+        'Tireweb Sites/Web/App_Files/options.config ',
+        'Tireweb Sites/Web/WebsiteOptions.config.',
+        'Tireweb Sites/Web/.env.'
+    )) {
+        $aliasManifest = New-ManifestPath
+        $null = Invoke-Deployment @{ IncludePaths = @($alias); CreateDeploymentManifestPath = $aliasManifest } 'noncanonical repository path'
+        Assert-True (-not (Test-Path -LiteralPath $aliasManifest)) 'Windows path aliases cannot enter a deployment manifest.'
+        $aliasedManifest = Get-Content $explicit -Raw | ConvertFrom-Json
+        $aliasedManifest.assets[0].repository_source_path = $alias
+        $aliasManifest = New-ManifestPath
+        $aliasedManifest | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $aliasManifest -Encoding UTF8
+        $null = Invoke-Deployment @{ DeploymentManifestPath = $aliasManifest } 'noncanonical repository path'
+    }
+    Remove-Item -LiteralPath (Join-Path $repository 'Tireweb Sites\Web\App_Files\options.config') -Force
     $null = Invoke-Deployment @{ IncludePaths = @('Scripts\feature.js'); GenerateListFromGitLogArgs = @('HEAD') } 'cannot be combined'
     $null = Invoke-Deployment @{ IncludePaths = @('Scripts\feature.js'); VerificationAssets = @('Tireweb Sites/Web/Scripts/feature.js|file:///invalid') } 'HTTP(S)'
     $linkedDirectory = Join-Path $repository 'Tireweb Sites\Web\Linked'
@@ -153,6 +189,48 @@ try {
     $null = Invoke-Deployment @{ IncludePaths = @('Customization\Customization.csproj'); MSBuildPath = (Join-Path $PSScriptRoot 'Fake-MSBuild.ps1'); CreateDeploymentManifestPath = $built }
     $builtManifest = Get-Content $built -Raw | ConvertFrom-Json
     Assert-True ($builtManifest.assets.Count -eq 1 -and $builtManifest.assets[0].repository_source_path -eq 'Tireweb Sites/Web/Bin/Customization.dll') 'Source project is replaced by its rebuilt DLL.'
+    foreach ($junctionRelativePath in @('Tireweb Sites\Web\Bin', 'Customization\bin', 'Customization\bin\Release')) {
+        $junctionPath = Join-Path $repository $junctionRelativePath
+        $savedDirectory = Join-Path $fixtureRoot ("saved-build-directory-{0}" -f [guid]::NewGuid().ToString('N'))
+        $externalDirectory = Join-Path $fixtureRoot ("external-build-directory-{0}" -f [guid]::NewGuid().ToString('N'))
+        New-Item -ItemType Directory -Path $externalDirectory -Force | Out-Null
+        $externalDllDirectory = if ($junctionRelativePath -eq 'Customization\bin') {
+            Join-Path $externalDirectory 'Release'
+        }
+        else {
+            $externalDirectory
+        }
+        New-Item -ItemType Directory -Path $externalDllDirectory -Force | Out-Null
+        $externalDll = Join-Path $externalDllDirectory 'Customization.dll'
+        [System.IO.File]::WriteAllText($externalDll, 'outside checkout sentinel')
+        Move-Item -LiteralPath $junctionPath -Destination $savedDirectory
+        try {
+            New-Item -ItemType Junction -Path $junctionPath -Target $externalDirectory | Out-Null
+            $junctionManifest = New-ManifestPath
+            $null = Invoke-Deployment @{
+                IncludePaths = @('Customization\Customization.csproj')
+                MSBuildPath = (Join-Path $PSScriptRoot 'Fake-MSBuild.ps1')
+                CreateDeploymentManifestPath = $junctionManifest
+            } 'symbolic link or junction'
+            Assert-True ([System.IO.File]::ReadAllText($externalDll) -eq 'outside checkout sentinel') 'Build junction validation prevents external DLL overwrite and deletion.'
+            Assert-True (-not (Test-Path -LiteralPath $junctionManifest)) 'Unsafe build paths fail before producing a deployment manifest.'
+            $rejectedBuild = $false
+            try {
+                & (Join-Path $skillRoot 'Build-StagingProjects.ps1') -RepositoryRoot $repository -ChangedPaths @('Customization\Customization.csproj') -MSBuildPath (Join-Path $PSScriptRoot 'Fake-MSBuild.ps1') | Out-Null
+            }
+            catch {
+                $rejectedBuild = $_.Exception.Message.Contains('symbolic link or junction')
+            }
+            Assert-True $rejectedBuild 'The standalone build helper enforces the same output path guard.'
+            Assert-True ([System.IO.File]::ReadAllText($externalDll) -eq 'outside checkout sentinel') 'The standalone helper leaves external DLLs intact.'
+        }
+        finally {
+            if (Test-Path -LiteralPath $junctionPath) {
+                [System.IO.Directory]::Delete($junctionPath)
+            }
+            Move-Item -LiteralPath $savedDirectory -Destination $junctionPath
+        }
+    }
     Write-FixtureFile 'Customization\fail-build' 'fail'
     $null = Invoke-Deployment @{ IncludePaths = @('Customization\Customization.csproj'); MSBuildPath = (Join-Path $PSScriptRoot 'Fake-MSBuild.ps1'); CreateDeploymentManifestPath = (New-ManifestPath) } 'MSBuild failed'
     Remove-Item -LiteralPath (Join-Path $repository 'Customization\fail-build') -Force
