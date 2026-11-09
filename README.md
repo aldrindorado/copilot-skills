@@ -16,6 +16,11 @@ npx skills add aldrindorado/copilot-skills@staging-deployment -g -y
 
 `@staging-deployment` installs only `skills/staging-deployment`.
 
+Use `/staging-deployment` for all staging uploads, including file lists and
+rebuilt project DLLs. It replaces the local `deploy-files-staging` skill.
+Deployments require the manifest and SHA-256 emitted by the approved preview;
+old manifests must be previewed again with the consolidated skill.
+
 ### Install all published skills
 
 Install every skill under this repository's `skills` directory:

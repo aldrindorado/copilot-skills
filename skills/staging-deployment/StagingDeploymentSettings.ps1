@@ -2,7 +2,12 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 function Get-StagingDeploymentSettingsPath {
-    $settingsDirectory = Join-Path $env:LOCALAPPDATA 'GitHub Copilot\staging-deployment'
+    param([string]$SessionId = $env:COPILOT_SESSION_ID)
+
+    if ([string]::IsNullOrWhiteSpace($SessionId) -or $SessionId -notmatch '^[a-zA-Z0-9_-]+$') {
+        throw 'Supply the current chat SessionId or an explicit SettingsPath. A user-wide staging target is not used.'
+    }
+    $settingsDirectory = Join-Path $env:LOCALAPPDATA "GitHub Copilot\staging-deployment\sessions\$SessionId"
     return Join-Path $settingsDirectory 'settings.json'
 }
 
@@ -48,9 +53,13 @@ function Normalize-StagingRemoteRoot {
 function Get-StagingDeploymentRemoteRoot {
     [CmdletBinding()]
     param(
-        [string]$SettingsPath = (Get-StagingDeploymentSettingsPath)
+        [string]$SessionId = $env:COPILOT_SESSION_ID,
+        [string]$SettingsPath
     )
 
+    if ([string]::IsNullOrWhiteSpace($SettingsPath)) {
+        $SettingsPath = Get-StagingDeploymentSettingsPath -SessionId $SessionId
+    }
     if (-not (Test-Path -LiteralPath $SettingsPath -PathType Leaf)) {
         return $null
     }
@@ -69,9 +78,13 @@ function Set-StagingDeploymentRemoteRoot {
         [Parameter(Mandatory = $true)]
         [string]$RemoteRoot,
 
-        [string]$SettingsPath = (Get-StagingDeploymentSettingsPath)
+        [string]$SessionId = $env:COPILOT_SESSION_ID,
+        [string]$SettingsPath
     )
 
+    if ([string]::IsNullOrWhiteSpace($SettingsPath)) {
+        $SettingsPath = Get-StagingDeploymentSettingsPath -SessionId $SessionId
+    }
     $normalizedRemoteRoot = Normalize-StagingRemoteRoot -RemoteRoot $RemoteRoot
     $settingsDirectory = Split-Path -Path $SettingsPath -Parent
     if (-not (Test-Path -LiteralPath $settingsDirectory -PathType Container)) {
@@ -91,9 +104,13 @@ function Set-StagingDeploymentRemoteRoot {
 function Remove-StagingDeploymentRemoteRoot {
     [CmdletBinding()]
     param(
-        [string]$SettingsPath = (Get-StagingDeploymentSettingsPath)
+        [string]$SessionId = $env:COPILOT_SESSION_ID,
+        [string]$SettingsPath
     )
 
+    if ([string]::IsNullOrWhiteSpace($SettingsPath)) {
+        $SettingsPath = Get-StagingDeploymentSettingsPath -SessionId $SessionId
+    }
     if (Test-Path -LiteralPath $SettingsPath -PathType Leaf) {
         Remove-Item -LiteralPath $SettingsPath -Force
     }

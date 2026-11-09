@@ -3,12 +3,15 @@ param(
     [string]$RepositoryRoot = (Get-Location).Path,
     [string]$LocalRoot = 'Tireweb Sites\Web',
     [string[]]$IncludePaths,
+    [string[]]$GenerateListFromGitLogArgs,
     [string]$DeploymentManifestPath,
+    [string]$DeploymentManifestSha256,
     [string]$CreateDeploymentManifestPath,
     [string[]]$VerificationAssets,
-    [ValidateSet('Uncommitted', 'Branch')]
+    [ValidateSet('Uncommitted', 'Branch', 'All')]
     [string]$ChangeScope = 'Uncommitted',
     [string]$BaseRef = 'development',
+    [string]$MSBuildPath,
     [string]$HostName = '52.44.202.235',
     [int]$Port = 22,
     [string]$UserName = 'aldrin.d',
@@ -24,20 +27,18 @@ param(
 Uploads Ezytire web files to the staging server using WinSCP.
 
 .DESCRIPTION
-The script discovers added and modified files inside the local web root using
-NUL-delimited Git output, preserving paths with spaces and other special
-characters. A preview can write an immutable deployment manifest containing the
-selected paths and SHA-256 hashes. Uploads require that manifest and revalidate
-each source file before transfer. Removed files are intentionally not deleted
-from staging. The SFTP password is read from the current user's Windows
-Credential Manager entry at runtime. Each uploaded file is checked against its
-remote byte length. VerificationAssets can additionally hash browser-served
-assets from staging after upload.
+Select uncommitted changes, committed feature changes, their union, explicit
+paths or filenames, or Git log paths. Committed selections export HEAD outside
+the repository so dirty files cannot enter the release. Previews prepare required
+project DLLs and a version 2 manifest binding source, target, paths and hashes.
+Uploads require the approved manifest and its SHA-256, revalidate every file,
+and never delete remote files. Authentication uses Windows Credential Manager.
+Remote size checks and optional public-asset hashes verify the uploaded release.
 
 .EXAMPLE
 $manifestPath = Join-Path $env:TEMP 'ezytire-staging-release.json'
 & "$HOME\.copilot\skills\staging-deployment\Deploy-Staging.ps1" -RepositoryRoot (Get-Location).Path -RemoteRoot '/EOSB-757' -CreateDeploymentManifestPath $manifestPath -WhatIf
-& "$HOME\.copilot\skills\staging-deployment\Deploy-Staging.ps1" -RepositoryRoot (Get-Location).Path -RemoteRoot '/EOSB-757' -DeploymentManifestPath $manifestPath
+& "$HOME\.copilot\skills\staging-deployment\Deploy-Staging.ps1" -RepositoryRoot (Get-Location).Path -RemoteRoot '/EOSB-757' -DeploymentManifestPath $manifestPath -DeploymentManifestSha256 '<hash emitted by preview>'
 
 #>
 
@@ -94,6 +95,51 @@ function Get-GitFiles {
     return @($outputText.Split([char]0, [System.StringSplitOptions]::RemoveEmptyEntries))
 }
 
+function Assert-NotSensitivePath {
+    param([Parameter(Mandatory = $true)][string]$RelativePath)
+
+    $path = $RelativePath.Replace('\', '/')
+    $name = [System.IO.Path]::GetFileName($path)
+    if ($name -eq 'WebsiteOptions.config' -or
+        $name -match '^\.env($|\.)|^(secrets|appsettings)(\..*)?\.json$|\.(pfx|key|pem|cer|crt)$' -or
+        $path -match '(^|/)App_Files/.*\.config$') {
+        throw "Refusing to deploy sensitive file: $RelativePath"
+    }
+}
+
+function Resolve-IncludePaths {
+    param([string[]]$Paths, [string]$Root, [string]$WebRoot)
+
+    foreach ($path in $Paths) {
+        if ([string]::IsNullOrWhiteSpace($path)) {
+            throw 'IncludePaths cannot contain an empty path.'
+        }
+        $normalized = $path.Trim().Replace('\', '/')
+        $null = Get-LocalFilePath -RepositoryRoot $Root -RelativePath $normalized
+        if (-not $normalized.Contains('/')) {
+            $matches = @(Get-ChildItem -LiteralPath $WebRoot -File -Recurse |
+                Where-Object { $_.Name -eq $normalized })
+            if ($matches.Count -eq 0) {
+                throw "No deployable file matches '$path'."
+            }
+            if ($matches.Count -gt 1) {
+                $candidates = @($matches | ForEach-Object { $_.FullName.Substring($Root.Length + 1).Replace('\', '/') } | Sort-Object)
+                throw "Ambiguous filename '$path'. Specify one of: $($candidates -join ', ')"
+            }
+            $normalized = $matches[0].FullName.Substring($Root.Length + 1).Replace('\', '/')
+        }
+        elseif (-not (Test-Path -LiteralPath (Get-LocalFilePath -RepositoryRoot $Root -RelativePath $normalized) -PathType Leaf)) {
+            $normalized = $LocalRoot.Replace('\', '/').TrimEnd('/') + '/' + $normalized
+        }
+        $localPath = Get-LocalFilePath -RepositoryRoot $Root -RelativePath $normalized
+        if (-not (Test-Path -LiteralPath $localPath -PathType Leaf)) {
+            throw "The requested file does not exist: $path"
+        }
+        Assert-NotSensitivePath -RelativePath $normalized
+        $normalized
+    }
+}
+
 function Get-LocalFilePath {
     param(
         [Parameter(Mandatory = $true)]
@@ -103,7 +149,8 @@ function Get-LocalFilePath {
         [string]$RelativePath
     )
 
-    if ([System.IO.Path]::IsPathRooted($RelativePath) -or $RelativePath -match '(^|/)\.\.(/|$)') {
+    $RelativePath = $RelativePath.Replace('\', '/')
+    if ([System.IO.Path]::IsPathRooted($RelativePath) -or $RelativePath -match '(^|/)\.\.(/|$)' -or $RelativePath.Contains(':')) {
         throw "Refusing to deploy an unsafe repository path: $RelativePath"
     }
 
@@ -113,6 +160,19 @@ function Get-LocalFilePath {
         throw "Refusing to deploy a file outside the repository: $RelativePath"
     }
 
+    if ((Get-Item -LiteralPath $RepositoryRoot -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
+        throw "Refusing to deploy through a symbolic link or junction source root: $RepositoryRoot"
+    }
+    $currentPath = $localPath
+    while ($currentPath.Length -gt $RepositoryRoot.TrimEnd('\').Length) {
+        if (Test-Path -LiteralPath $currentPath) {
+            $item = Get-Item -LiteralPath $currentPath -Force
+            if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                throw "Refusing to deploy through a symbolic link or junction: $RelativePath"
+            }
+        }
+        $currentPath = Split-Path -Path $currentPath -Parent
+    }
     return $localPath
 }
 
@@ -155,7 +215,7 @@ function Write-DeploymentManifest {
 
     $manifestDirectory = Split-Path -Path $manifestFullPath -Parent
     if (-not (Test-Path -LiteralPath $manifestDirectory -PathType Container)) {
-        New-Item -ItemType Directory -Path $manifestDirectory -Force | Out-Null
+        New-Item -ItemType Directory -Path $manifestDirectory -Force -WhatIf:$false | Out-Null
     }
 
     $releaseCommit = (& git -C $RepositoryRoot rev-parse HEAD).Trim()
@@ -175,13 +235,39 @@ function Write-DeploymentManifest {
             }
     )
     $manifest = [PSCustomObject]@{
-        schema_version = '1.0'
+        schema_version = '2.0'
         release_commit = $releaseCommit
+        source_repository_root = $RepositoryRoot
+        source_root = $script:SourceRoot
+        source_mode = $script:SourceMode
+        local_root = $LocalRoot
+        remote_root = $remoteRootPath
+        host_name = $HostName
+        port = $Port
+        user_name = $UserName
+        credential_target = $CredentialTarget
+        ssh_host_key_fingerprint = $SshHostKeyFingerprint
+        verification_assets = @($VerificationAssets | Where-Object { $_ })
         assets = $assets
     }
     $utf8WithoutBom = New-Object System.Text.UTF8Encoding($false)
-    [System.IO.File]::WriteAllText($manifestFullPath, ($manifest | ConvertTo-Json -Depth 4), $utf8WithoutBom)
+    $stream = [System.IO.File]::Open($manifestFullPath, [System.IO.FileMode]::CreateNew, [System.IO.FileAccess]::Write)
+    try {
+        $bytes = $utf8WithoutBom.GetBytes(($manifest | ConvertTo-Json -Depth 4))
+        $stream.Write($bytes, 0, $bytes.Length)
+        $algorithm = [System.Security.Cryptography.SHA256]::Create()
+        try {
+            $manifestHash = -join ($algorithm.ComputeHash($bytes) | ForEach-Object { $_.ToString('x2') })
+        }
+        finally {
+            $algorithm.Dispose()
+        }
+    }
+    finally {
+        $stream.Dispose()
+    }
     Write-Host "Wrote deployment manifest: $manifestFullPath"
+    Write-Host ("Manifest SHA256: {0}" -f $manifestHash)
 }
 
 function Test-VerificationAssets {
@@ -337,15 +423,51 @@ function Get-ManifestFiles {
         throw "The deployment manifest was not found: $manifestFullPath"
     }
 
+    $manifestStream = [System.IO.File]::Open($manifestFullPath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::Read)
     try {
-        $manifest = Get-Content -LiteralPath $manifestFullPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+        $script:ManifestDocumentHash = Get-FileSha256 -Path $manifestFullPath
+        if (-not [string]::IsNullOrWhiteSpace($DeploymentManifestSha256) -and
+            $script:ManifestDocumentHash -ne $DeploymentManifestSha256) {
+            throw 'The deployment manifest changed after preview. Create and approve a new manifest.'
+        }
+        try {
+            $manifest = Get-Content -LiteralPath $manifestFullPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+        }
+        catch {
+            throw "The deployment manifest is not valid JSON: $manifestFullPath"
+        }
     }
-    catch {
-        throw "The deployment manifest is not valid JSON: $manifestFullPath"
+    finally {
+        $manifestStream.Dispose()
     }
-
-    if ($manifest.schema_version -ne '1.0') {
-        throw 'The deployment manifest must declare schema_version 1.0.'
+    if ($manifest.schema_version -ne '2.0') {
+        throw 'The deployment manifest must declare schema_version 2.0. Create and approve a new preview for older manifests.'
+    }
+    if ($manifest.source_repository_root -ne $RepositoryRoot -or
+        $manifest.remote_root -cne $RemoteRoot -or
+        $manifest.local_root -ne $LocalRoot -or
+        $manifest.host_name -ne $HostName -or
+        $manifest.port -ne $Port -or
+        $manifest.user_name -ne $UserName -or
+        $manifest.credential_target -ne $CredentialTarget -or
+        $manifest.ssh_host_key_fingerprint -ne $SshHostKeyFingerprint) {
+        throw 'The checkout, staging target, or connection does not match the approved deployment manifest.'
+    }
+    if ($manifest.source_mode -notin @('WorkingTree', 'Committed')) {
+        throw 'The deployment manifest source_mode must be WorkingTree or Committed.'
+    }
+    $script:SourceMode = $manifest.source_mode
+    $script:SourceRoot = [System.IO.Path]::GetFullPath([string]$manifest.source_root)
+    if ($script:SourceMode -eq 'WorkingTree' -and $script:SourceRoot -ne $RepositoryRoot) {
+        throw 'A working-tree manifest must use the authorized repository checkout.'
+    }
+    if ($script:SourceMode -eq 'Committed' -and $script:SourceRoot -ne ($manifestFullPath + '.source')) {
+        throw 'A committed manifest must use its sibling committed snapshot.'
+    }
+    $LocalRootPrefix = (Join-Path $script:SourceRoot $LocalRoot).TrimEnd('\') + '\'
+    $script:ManifestVerificationAssets = @($manifest.verification_assets)
+    if ($VerificationAssets -and (@($VerificationAssets) -join "`n") -cne ($script:ManifestVerificationAssets -join "`n")) {
+        throw 'VerificationAssets must match the approved deployment manifest.'
     }
 
     if ([string]::IsNullOrWhiteSpace($manifest.release_commit) -or $manifest.release_commit -notmatch '^[a-f0-9]{40}$') {
@@ -382,7 +504,8 @@ function Get-ManifestFiles {
             throw "The deployment manifest contains the same repository path more than once: $repositoryPath"
         }
 
-        $localPath = Get-LocalFilePath -RepositoryRoot $RepositoryRoot -RelativePath $repositoryPath
+        Assert-NotSensitivePath -RelativePath $repositoryPath
+        $localPath = Get-LocalFilePath -RepositoryRoot $script:SourceRoot -RelativePath $repositoryPath
         if (-not (Test-Path -LiteralPath $localPath -PathType Leaf)) {
             throw "The deployment manifest file does not exist: $repositoryPath"
         }
@@ -403,6 +526,7 @@ function Get-ManifestFiles {
             throw "The deployment manifest staging path does not match '$repositoryPath'. Expected: $actualRemotePath. Declared: $declaredRemotePath."
         }
 
+        $script:ManifestHashes[$normalizedRepositoryPath] = $expectedHash
         $files += $repositoryPath
     }
 
@@ -443,6 +567,27 @@ if (-not (Test-Path -LiteralPath $localRootPath -PathType Container)) {
 $localRootPrefix = $localRootPath.TrimEnd('\') + '\'
 $remoteRootPath = Normalize-StagingRemoteRoot -RemoteRoot $RemoteRoot
 $script:ManifestHashes = @{}
+$script:SourceRoot = $repositoryRoot
+$script:SourceMode = 'WorkingTree'
+$script:ManifestVerificationAssets = @()
+$selectionCommit = (& git -C $repositoryRoot rev-parse HEAD).Trim()
+if ($LASTEXITCODE -ne 0) {
+    throw 'Unable to determine the source commit.'
+}
+
+if ($LocalRoot.Replace('\', '/').TrimEnd('/') -ne 'Tireweb Sites/Web') {
+    throw 'LocalRoot must be Tireweb Sites\Web. Other deployment roots are not supported.'
+}
+$LocalRoot = 'Tireweb Sites\Web'
+if ($IncludePaths -and $GenerateListFromGitLogArgs) {
+    throw 'IncludePaths cannot be combined with GenerateListFromGitLogArgs.'
+}
+if (($IncludePaths -or $GenerateListFromGitLogArgs) -and $PSBoundParameters.ContainsKey('ChangeScope')) {
+    throw 'Explicit paths, Git log selection, and ChangeScope are separate selection modes.'
+}
+if (-not [string]::IsNullOrWhiteSpace($DeploymentManifestSha256) -and $DeploymentManifestSha256 -notmatch '^[a-fA-F0-9]{64}$') {
+    throw 'DeploymentManifestSha256 must be a 64-character SHA-256 hash.'
+}
 
 if (-not [string]::IsNullOrWhiteSpace($CreateDeploymentManifestPath)) {
     if (-not $WhatIfPreference) {
@@ -452,24 +597,37 @@ if (-not [string]::IsNullOrWhiteSpace($CreateDeploymentManifestPath)) {
     if (-not [string]::IsNullOrWhiteSpace($DeploymentManifestPath)) {
         throw 'CreateDeploymentManifestPath cannot be combined with DeploymentManifestPath.'
     }
+    if (Test-Path -LiteralPath $CreateDeploymentManifestPath) {
+        throw 'Refusing to overwrite an existing deployment manifest. Use a new manifest path.'
+    }
 }
 
 if (-not $WhatIfPreference -and [string]::IsNullOrWhiteSpace($DeploymentManifestPath)) {
     throw 'Uploads require DeploymentManifestPath. Run a -WhatIf preview with CreateDeploymentManifestPath, then upload using that manifest.'
 }
+if (-not $WhatIfPreference -and [string]::IsNullOrWhiteSpace($DeploymentManifestSha256)) {
+    throw 'Uploads require the Manifest SHA256 emitted by the approved preview.'
+}
 
 if (-not [string]::IsNullOrWhiteSpace($DeploymentManifestPath)) {
-    if ($IncludePaths -and $IncludePaths.Count -gt 0) {
-        throw 'IncludePaths cannot be combined with DeploymentManifestPath.'
+    if ($IncludePaths -or $GenerateListFromGitLogArgs -or $PSBoundParameters.ContainsKey('ChangeScope') -or $PSBoundParameters.ContainsKey('BaseRef') -or $MSBuildPath) {
+        throw 'DeploymentManifestPath cannot be combined with selection or build options.'
     }
 
     $changedFiles = Get-ManifestFiles -ManifestPath $DeploymentManifestPath -RepositoryRoot $repositoryRoot -LocalRootPrefix $localRootPrefix -RemoteRoot $remoteRootPath
-    $manifest = Get-Content -LiteralPath $DeploymentManifestPath -Raw | ConvertFrom-Json
-    foreach ($asset in @($manifest.assets)) {
-        $script:ManifestHashes[$asset.repository_source_path.Replace('\', '/')] = $asset.sha256
-    }
 }
-elseif ($ChangeScope -eq 'Branch') {
+elseif ($IncludePaths) {
+    $changedFiles = @(Resolve-IncludePaths -Paths $IncludePaths -Root $repositoryRoot -WebRoot $localRootPath)
+}
+elseif ($GenerateListFromGitLogArgs) {
+    if ($GenerateListFromGitLogArgs -contains '--' -or @($GenerateListFromGitLogArgs | Where-Object { $_ -match '^--(output|format|pretty|name|raw|stat|numstat|patch|diff-filter|no-diff|no-name|quiet|exit-code)|^-[pz]$' }).Count -gt 0) {
+        throw 'Git log arguments may select revisions, dates, and merge traversal, but cannot override the file-list output format.'
+    }
+    $changedFiles = @(Get-GitFiles -RepositoryRoot $repositoryRoot -Arguments (@('log') + $GenerateListFromGitLogArgs + @('--name-only', '--pretty=format:', '--no-renames', '-z')))
+    $changedFiles = @($changedFiles | ForEach-Object { $_.TrimStart("`r", "`n") } | Where-Object { $_ })
+    $script:SourceMode = 'Committed'
+}
+elseif ($ChangeScope -in @('Branch', 'All')) {
     if ([string]::IsNullOrWhiteSpace($BaseRef)) {
         throw 'BaseRef is required when ChangeScope is Branch.'
     }
@@ -485,61 +643,94 @@ elseif ($ChangeScope -eq 'Branch') {
             '--name-only',
             '-z',
             '--diff-filter=ACMR',
+            '--no-renames',
             ($BaseRef + '...HEAD')
         )
     )
+    $removedFiles = @(Get-GitFiles -RepositoryRoot $repositoryRoot -Arguments @('diff', '--name-only', '-z', '--no-renames', '--diff-filter=D', ($BaseRef + '...HEAD')))
+    $changedFiles += $removedFiles
+    if ($ChangeScope -eq 'Branch') {
+        $script:SourceMode = 'Committed'
+    }
+    else {
+        $changedFiles += @(Get-GitFiles -RepositoryRoot $repositoryRoot -Arguments @('diff', '--name-only', '-z', '--no-renames', '--diff-filter=ACMRD', '--cached'))
+        $changedFiles += @(Get-GitFiles -RepositoryRoot $repositoryRoot -Arguments @('diff', '--name-only', '-z', '--no-renames', '--diff-filter=ACMRD'))
+        $changedFiles += @(Get-GitFiles -RepositoryRoot $repositoryRoot -Arguments @('ls-files', '--others', '--exclude-standard', '-z'))
+    }
 }
 else {
     $changedFiles = @(
-        Get-GitFiles -RepositoryRoot $repositoryRoot -Arguments @('diff', '--name-only', '-z', '--diff-filter=ACMR', '--cached')
-        Get-GitFiles -RepositoryRoot $repositoryRoot -Arguments @('diff', '--name-only', '-z', '--diff-filter=ACMR')
+        Get-GitFiles -RepositoryRoot $repositoryRoot -Arguments @('diff', '--name-only', '-z', '--no-renames', '--diff-filter=ACMRD', '--cached')
+        Get-GitFiles -RepositoryRoot $repositoryRoot -Arguments @('diff', '--name-only', '-z', '--no-renames', '--diff-filter=ACMRD')
         Get-GitFiles -RepositoryRoot $repositoryRoot -Arguments @('ls-files', '--others', '--exclude-standard', '-z')
     )
 }
 
-if ($IncludePaths -and $IncludePaths.Count -gt 0) {
-    $normalizedIncludePaths = @()
-    foreach ($includePath in $IncludePaths) {
-        if ([string]::IsNullOrWhiteSpace($includePath)) {
-            throw 'IncludePaths cannot contain an empty path.'
-        }
-
-        $normalizedIncludePath = $includePath.Trim().Replace('\', '/')
-        if ([System.IO.Path]::IsPathRooted($normalizedIncludePath) -or $normalizedIncludePath -match '(^|/)\.\.(/|$)') {
-            throw "Refusing to deploy an unsafe included path: $includePath"
-        }
-
-        $normalizedIncludePaths += $normalizedIncludePath
+if ($script:SourceMode -eq 'Committed' -and [string]::IsNullOrWhiteSpace($DeploymentManifestPath)) {
+    if ([string]::IsNullOrWhiteSpace($CreateDeploymentManifestPath)) {
+        throw 'Committed previews require CreateDeploymentManifestPath to retain the committed snapshot.'
     }
-
-    $normalizedChangedFiles = @(
-        $changedFiles |
-            Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
-            ForEach-Object { $_.Replace('\', '/') }
-    )
-    $missingIncludePaths = @(
-        $normalizedIncludePaths |
-            Where-Object { $normalizedChangedFiles -notcontains $_ } |
-            Sort-Object -Unique
-    )
-    if ($missingIncludePaths.Count -gt 0) {
-        throw "The requested file(s) are not added or modified uncommitted files: $($missingIncludePaths -join ', ')"
+    $manifestFullPath = [System.IO.Path]::GetFullPath($CreateDeploymentManifestPath)
+    if ($manifestFullPath.StartsWith($repositoryPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw 'Committed snapshots and manifests must be outside the repository.'
     }
+    $script:SourceRoot = $manifestFullPath + '.source'
+    $archivePath = $manifestFullPath + '.zip'
+    if ((Test-Path -LiteralPath $script:SourceRoot) -or (Test-Path -LiteralPath $archivePath)) {
+        throw 'Refusing to overwrite an existing committed snapshot or archive.'
+    }
+    $committedEntries = @(Get-GitFiles -RepositoryRoot $repositoryRoot -Arguments @('ls-tree', '-r', '-z', $selectionCommit))
+    foreach ($entry in $committedEntries) {
+        if ($entry -match '^120000 blob [a-f0-9]+\t(.+)$' -and $changedFiles -contains $Matches[1]) {
+            throw "Refusing to export a selected symbolic link: $($Matches[1])"
+        }
+    }
+    New-Item -ItemType Directory -Path (Split-Path -Path $manifestFullPath -Parent) -Force -WhatIf:$false | Out-Null
+    & git -C $repositoryRoot archive --format=zip "--output=$archivePath" $selectionCommit
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Unable to export the committed source snapshot.'
+    }
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    try {
+        [System.IO.Compression.ZipFile]::ExtractToDirectory($archivePath, $script:SourceRoot)
+    }
+    finally {
+        Remove-Item -LiteralPath $archivePath -Force -WhatIf:$false
+    }
+    foreach ($entry in $committedEntries) {
+        if ($entry -match '^\d+ blob [a-f0-9]+\t(.+)$' -and $changedFiles -contains $Matches[1] -and
+            -not (Test-Path -LiteralPath (Get-LocalFilePath -RepositoryRoot $script:SourceRoot -RelativePath $Matches[1]) -PathType Leaf)) {
+            throw "The committed snapshot omitted a selected file (check export-ignore attributes): $($Matches[1])"
+        }
+    }
+}
 
-    $changedFiles = @(
-        $changedFiles |
-            Where-Object { $normalizedIncludePaths -contains $_.Replace('\', '/') }
-    )
+$localRootPrefix = (Join-Path $script:SourceRoot $LocalRoot).TrimEnd('\') + '\'
+if ([string]::IsNullOrWhiteSpace($DeploymentManifestPath)) {
+    $changedFiles = @($changedFiles | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Sort-Object -Unique)
+    foreach ($path in $changedFiles) {
+        $null = Get-LocalFilePath -RepositoryRoot $script:SourceRoot -RelativePath $path
+        Assert-NotSensitivePath -RelativePath $path
+    }
+    if ($changedFiles.Count -gt 0) {
+        $preparedDlls = @(& (Join-Path $PSScriptRoot 'Build-StagingProjects.ps1') -RepositoryRoot $script:SourceRoot -ChangedPaths $changedFiles -MSBuildPath $MSBuildPath)
+        $changedFiles += @($preparedDlls | ForEach-Object { $_.WebRelativePath })
+    }
 }
 
 $filesToUpload = @()
 foreach ($relativePath in ($changedFiles | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Sort-Object -Unique)) {
-    $localPath = Get-LocalFilePath -RepositoryRoot $repositoryRoot -RelativePath $relativePath
+    $localPath = Get-LocalFilePath -RepositoryRoot $script:SourceRoot -RelativePath $relativePath
     if (-not (Test-Path -LiteralPath $localPath -PathType Leaf)) {
+        if ($IncludePaths -or $DeploymentManifestPath) {
+            throw "The selected file does not exist: $relativePath"
+        }
+        Write-Warning "Excluded deleted or missing file; remote deletion is not performed: $relativePath"
         continue
     }
 
     if (-not $localPath.StartsWith($localRootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        Write-Warning "Source path is not uploaded directly (supported projects produce DLLs): $relativePath"
         continue
     }
 
@@ -576,9 +767,29 @@ foreach ($relativePath in ($changedFiles | Where-Object { -not [string]::IsNullO
     }
 }
 
+$currentCommit = (& git -C $repositoryRoot rev-parse HEAD).Trim()
+if ($LASTEXITCODE -ne 0 -or $currentCommit -ne $selectionCommit) {
+    throw 'The source checkout HEAD changed during preparation. Create a new preview.'
+}
+if ($DeploymentManifestPath) {
+    $VerificationAssets = $script:ManifestVerificationAssets
+}
+$verificationPaths = @($filesToUpload | ForEach-Object { $_.RelativePath.Replace('\', '/') })
+foreach ($asset in @($VerificationAssets | Where-Object { $_ })) {
+    $parts = $asset -split '\|', 2
+    $uri = $null
+    if ($parts.Count -ne 2 -or
+        $verificationPaths -notcontains $parts[0].Trim().Replace('\', '/') -or
+        -not [System.Uri]::TryCreate($parts[1].Trim(), [System.UriKind]::Absolute, [ref]$uri) -or
+        $uri.Scheme -notin @('http', 'https')) {
+        throw "VerificationAssets must map a selected repository path to an absolute HTTP(S) URL: $asset"
+    }
+}
+
 if ($filesToUpload.Count -eq 0) {
     if ($WhatIfPreference) {
-        Write-Host 'Dry run complete. No files were uploaded.'
+        Write-Host ("Remote root: {0}" -f $remoteRootPath)
+        Write-Host 'Upload queue: empty. No files were uploaded.'
         exit 0
     }
 
@@ -587,12 +798,20 @@ if ($filesToUpload.Count -eq 0) {
 }
 
 if ($WhatIfPreference) {
-    Write-Host ("Dry run selected {0} file(s) for upload to {1}:" -f $filesToUpload.Count, $remoteRootPath)
+    Write-Host ("Source checkout: {0}" -f $repositoryRoot)
+    Write-Host ("Source commit: {0}; content mode: {1}; content root: {2}" -f $selectionCommit, $script:SourceMode, $script:SourceRoot)
+    Write-Host ("Remote root: {0}" -f $remoteRootPath)
+    Write-Host 'Upload queue:'
+    $queueIndex = 0
     foreach ($file in ($filesToUpload | Sort-Object RelativePath)) {
-        Write-Host ("- {0} -> {1}" -f $file.RelativePath, $file.RemotePath)
+        $queueIndex++
+        Write-Host ('{0}. `{1}` -> {2}' -f $queueIndex, $file.RelativePath.Replace('\', '/'), $file.RemotePath)
     }
     if (-not [string]::IsNullOrWhiteSpace($CreateDeploymentManifestPath)) {
         Write-DeploymentManifest -ManifestPath $CreateDeploymentManifestPath -RepositoryRoot $repositoryRoot -Files $filesToUpload
+    }
+    elseif ($DeploymentManifestPath) {
+        Write-Host ("Manifest SHA256: {0}" -f $script:ManifestDocumentHash)
     }
     exit 0
 }
@@ -624,6 +843,7 @@ $credential = $null
 $plainPassword = $null
 $sessionOptions = $null
 $session = $null
+$uploadedPaths = @()
 try {
     $credential = Get-StagingCredential -Target $CredentialTarget
     if ($credential.UserName -ne $UserName) {
@@ -651,20 +871,31 @@ try {
     $transferOptions = New-Object WinSCP.TransferOptions
     $transferOptions.TransferMode = [WinSCP.TransferMode]::Binary
     foreach ($file in $filesToUpload) {
-        $currentHash = Get-FileSha256 -Path $file.LocalPath
-        if ($currentHash -ne $file.Sha256) {
-            throw "Source file changed after manifest validation: '$($file.RelativePath)'. Expected: $($file.Sha256). Actual: $currentHash."
+        # Keep the approved bytes locked against writers until their transfer finishes.
+        $sourceStream = [System.IO.File]::Open($file.LocalPath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::Read)
+        try {
+            $currentHash = Get-FileSha256 -Path $file.LocalPath
+            if ($currentHash -ne $file.Sha256) {
+                throw "Source file changed after manifest validation: '$($file.RelativePath)'. Expected: $($file.Sha256). Actual: $currentHash."
+            }
+            $escapedSourcePath = [WinSCP.RemotePath]::EscapeFileMask($file.LocalPath)
+            $transferResult = $session.PutFiles($escapedSourcePath, $file.RemotePath, $false, $transferOptions)
+            $transferResult.Check()
+            $remoteFileInfo = $session.GetFileInfo($file.RemotePath)
+            if ($remoteFileInfo.Length -ne $sourceStream.Length) {
+                throw "Remote file size mismatch for '$($file.RemotePath)'. Local: $($sourceStream.Length) bytes. Remote: $($remoteFileInfo.Length) bytes."
+            }
+            $uploadedPaths += $file.RemotePath
+            Write-Host ("Uploaded and size-verified: {0} -> {1}" -f $file.RelativePath, $file.RemotePath)
         }
-
-        $transferResult = $session.PutFiles($file.LocalPath, $file.RemotePath, $false, $transferOptions)
-        $transferResult.Check()
-
-        $localFileLength = [Int64](Get-Item -LiteralPath $file.LocalPath -ErrorAction Stop).Length
-        $remoteFileInfo = $session.GetFileInfo($file.RemotePath)
-        if ($remoteFileInfo.Length -ne $localFileLength) {
-            throw "Remote file size mismatch for '$($file.RemotePath)'. Local: $localFileLength bytes. Remote: $($remoteFileInfo.Length) bytes."
+        finally {
+            $sourceStream.Dispose()
         }
     }
+}
+catch {
+    Write-Warning ("Deployment failed; staging may be partially updated. Completed paths: {0}. The failing transfer may also have written bytes." -f ($uploadedPaths -join ', '))
+    throw
 }
 finally {
     if ($session -ne $null) {
